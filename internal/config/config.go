@@ -12,11 +12,16 @@ import (
 
 type Config struct {
 	Database DatabaseConfig `toml:"database"`
+	HTTP     HTTPConfig     `toml:"http"`
 	Paste    PasteConfig    `toml:"paste"`
 }
 
 type DatabaseConfig struct {
 	Path string `toml:"path"`
+}
+
+type HTTPConfig struct {
+	BaseURL string `toml:"base_url"`
 }
 
 type PasteConfig struct {
