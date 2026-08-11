@@ -15,6 +15,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/yaps-sh/yaps/internal/config"
 	"github.com/yaps-sh/yaps/internal/database"
+	"github.com/yaps-sh/yaps/internal/paste"
+	"github.com/yaps-sh/yaps/internal/web"
 )
 
 const shutdownTimeout = 10 * time.Second
@@ -51,6 +53,9 @@ func main() {
 	}
 	defer closeWithTimeout("database", db.Close)
 
+	pasteSvc := paste.New(db)
+	webHandler := web.New(pasteSvc, cfg)
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	// TODO: configurable?
@@ -69,17 +74,13 @@ func main() {
 
 	r.Route(
 		"/api/v1", func(r chi.Router) {
-			r.Post(
-				"/paste", func(w http.ResponseWriter, r *http.Request) {
-					//
-				},
-			)
+			r.Post("/paste", webHandler.CreatePaste)
 		},
 	)
 
 	// TODO add regex to only allow the limited id values (letters, numbers)
-	r.Get("/{id}", viewPaste)
-	r.Get("/{id}.{ext}", viewPaste)
+	r.Get("/{id}", webHandler.GetPaste)
+	r.Get("/{id}.{ext}", webHandler.GetPaste)
 
 	srv := &http.Server{
 		Addr:         ":3000", // TODO: config this too
@@ -115,14 +116,6 @@ func main() {
 			slog.Error("error during server shutdown", "error", err)
 		}
 	}
-}
-
-func viewPaste(w http.ResponseWriter, r *http.Request) {
-	// TODO all this.
-	// id := chi.URLParam(r, "id")
-	// extension := chi.URLParam(r, "ext")
-	// viewMode := r.URL.Query().Get("view")
-
 }
 
 func closeWithTimeout(name string, close func(ctx context.Context) error) {
