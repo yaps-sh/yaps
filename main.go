@@ -54,10 +54,12 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	// TODO: configurable?
+	// ClientIPFromRemoteAddr for default option
 	// r.Use(middleware.ClientIPFromHeader("CF-Connecting-IP"))
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.StripSlashes)
+	// TODO add ratelimiting middleware, make it configurable. should also only apply to the create paste endpoint
 
 	r.Get(
 		"/", func(w http.ResponseWriter, r *http.Request) {
