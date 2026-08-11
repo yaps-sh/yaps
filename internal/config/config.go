@@ -38,8 +38,8 @@ func Load(path string) (*Config, error) {
 
 	dec := toml.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
-	
-	if err = dec.Decode(&cfg); err != nil {
+
+	if err = dec.Decode(cfg); err != nil {
 		return nil, fmt.Errorf("failed to decode config file: %w", err)
 	}
 

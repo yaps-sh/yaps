@@ -6,60 +6,100 @@ import (
 	"embed"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"os"
-
-	_ "modernc.org/sqlite"
+	"time"
 
 	"github.com/pressly/goose/v3"
 	"github.com/yaps-sh/yaps/internal/config"
 	"github.com/yaps-sh/yaps/internal/database/sqlc"
+	_ "modernc.org/sqlite"
 )
 
 type Database struct {
-	db      *sql.DB
-	Queries *sqlc.Queries
+	WriteQueries *sqlc.Queries
+	ReadQueries  *sqlc.Queries
+
+	write *sql.DB
+	read  *sql.DB
 }
 
 //go:embed migrations/*.sql
 var migrationFS embed.FS
 
 func New(ctx context.Context, cfg config.DatabaseConfig) (*Database, error) {
-	conn, err := sql.Open("sqlite", cfg.Path)
-	if err != nil {
-		return nil, err
+	if cfg.Path == "" {
+		return nil, fmt.Errorf("database path must not be empty")
 	}
 
-	if err = runMigrations(ctx, conn); err != nil {
-		if err = conn.Close(); err != nil {
-			slog.ErrorContext(ctx, "failed to close database connection", "err", err)
-		}
+	dsn := buildDSN(cfg.Path)
 
+	writeDB, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open write connection: %w", err)
+	}
+
+	writeDB.SetMaxOpenConns(1)
+	writeDB.SetConnMaxIdleTime(5 * time.Minute)
+
+	readDB, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		_ = writeDB.Close()
+		return nil, fmt.Errorf("failed to open read connection: %w", err)
+	}
+
+	readDB.SetConnMaxIdleTime(5 * time.Minute)
+
+	if err = runMigrations(ctx, writeDB); err != nil {
+		_ = writeDB.Close()
+		_ = readDB.Close()
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
 	}
 
-	if err = conn.Ping(); err != nil {
-		slog.ErrorContext(ctx, "failed to ping database connection", "err", err)
-
-		if err = conn.Close(); err != nil {
-			slog.ErrorContext(ctx, "failed to close database connection", "err", err)
-		}
-
-		return nil, fmt.Errorf("failed to ping database connection: %w", err)
+	if err = writeDB.PingContext(ctx); err != nil {
+		_ = writeDB.Close()
+		_ = readDB.Close()
+		return nil, fmt.Errorf("failed to ping write connection: %w", err)
+	}
+	if err = readDB.PingContext(ctx); err != nil {
+		_ = writeDB.Close()
+		_ = readDB.Close()
+		return nil, fmt.Errorf("failed to ping read connection: %w", err)
 	}
 
-	slog.InfoContext(ctx, "database connection established")
+	slog.InfoContext(ctx, "database connections established", "path", cfg.Path)
 
 	return &Database{
-		db:      conn,
-		Queries: sqlc.New(conn),
+		WriteQueries: sqlc.New(writeDB),
+		ReadQueries:  sqlc.New(readDB),
+		write:        writeDB,
+		read:         readDB,
 	}, nil
 }
 
+func buildDSN(path string) string {
+	v := url.Values{}
+	v.Add("_pragma", "journal_mode(WAL)")
+	v.Add("_pragma", "busy_timeout(5000)")
+	v.Add("_pragma", "synchronous(NORMAL)")
+	v.Add("_pragma", "foreign_keys(ON)")
+
+	return fmt.Sprintf("%s?%s", path, v.Encode())
+}
+
 func (db *Database) Close(ctx context.Context) error {
-	if err := db.db.Close(); err != nil {
-		return err
+	var errs []error
+
+	if err := db.write.Close(); err != nil {
+		errs = append(errs, fmt.Errorf("write pool: %w", err))
+	}
+	if err := db.read.Close(); err != nil {
+		errs = append(errs, fmt.Errorf("read pool: %w", err))
 	}
 
+	if len(errs) > 0 {
+		return fmt.Errorf("errors closing database: %v", errs)
+	}
 	return nil
 }
 
