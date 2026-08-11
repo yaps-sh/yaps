@@ -1,1 +1,1 @@
-# yaps
+# Yet-Another-Pasting-Service
