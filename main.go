@@ -72,12 +72,6 @@ func main() {
 					//
 				},
 			)
-
-			r.Get(
-				"/paste/{id}", func(w http.ResponseWriter, r *http.Request) {
-					//
-				},
-			)
 		},
 	)
 
