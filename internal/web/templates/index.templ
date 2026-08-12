@@ -241,9 +241,11 @@ templ index(primary []string, all []string) {
 			<button type="button" id="createBtn" class="btn-ghost">Create Paste</button>
 		</div>
 	</div>
+	@templ.JSONScript("primary-languages-data", primary)
+	@templ.JSONScript("all-languages-data", all)
 	<script>
-        const primaryLanguages = {{ primary }}
-        const allLanguages = {{ all }}
+        const primaryLanguages = JSON.parse(document.getElementById('primary-languages-data').textContent);
+        const allLanguages = JSON.parse(document.getElementById('all-languages-data').textContent);
     </script>
 	<script>
         (function () {
