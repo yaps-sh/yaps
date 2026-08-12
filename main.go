@@ -86,11 +86,12 @@ func main() {
 	r.Get("/{id:[a-zA-Z0-9]+}.{ext}", webHandler.GetPaste)
 
 	srv := &http.Server{
-		Addr:         ":3000",
-		Handler:      r,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:              ":3000",
+		Handler:           r,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	errCh := make(chan error, 1)

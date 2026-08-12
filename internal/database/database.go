@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/pressly/goose/v3"
@@ -30,6 +31,12 @@ var migrationFS embed.FS
 func New(ctx context.Context, cfg config.DatabaseConfig) (*Database, error) {
 	if cfg.Path == "" {
 		return nil, fmt.Errorf("database path must not be empty")
+	}
+
+	if dir := filepath.Dir(cfg.Path); dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0o750); err != nil {
+			return nil, fmt.Errorf("failed to create database directory %q: %w", dir, err)
+		}
 	}
 
 	dsn := buildDSN(cfg.Path)

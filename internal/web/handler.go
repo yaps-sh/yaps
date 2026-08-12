@@ -91,12 +91,20 @@ func (h *Handler) CreatePaste(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.validatorSvc.Struct(req); err != nil {
-		writeJSON(
-			w, http.StatusBadRequest, ErrorResponse{
-				Error: "content must be valid UTF-8 text",
-			},
-		)
-
+		msg := "invalid request payload"
+		var vErrs validator.ValidationErrors
+		if errors.As(err, &vErrs) && len(vErrs) > 0 {
+			fe := vErrs[0]
+			switch {
+			case fe.Field() == "Content" && fe.Tag() == "required":
+				msg = "content is required"
+			case fe.Field() == "Content" && fe.Tag() == "utf8":
+				msg = "content must be valid UTF-8 text"
+			case fe.Field() == "ExpiresIn" && fe.Tag() == "gt":
+				msg = "expires_in must be greater than 0"
+			}
+		}
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: msg})
 		return
 	}
 
@@ -140,12 +148,14 @@ func (h *Handler) CreatePaste(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	languageProvided := req.Language != nil && *req.Language != ""
+
 	writeJSON(
 		w, http.StatusCreated, CreatePasteResponse{
 			ID:               entry.ID,
 			URL:              fmt.Sprintf("%s/%s", h.cfg.HTTP.BaseURL, entry.ID),
 			Language:         entry.DetectedLanguage,
-			LanguageDetected: req.Language == nil,
+			LanguageDetected: !languageProvided,
 			SizeBytes:        entry.SizeBytes,
 			ExpiresAt:        entry.ExpiresAt.Format(time.RFC3339),
 			CreatedAt:        entry.CreatedAt.Format(time.RFC3339),

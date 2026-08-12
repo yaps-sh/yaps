@@ -61,6 +61,27 @@ func defaults() *Config {
 }
 
 func (c *Config) Validate() error {
+	if c.Database.Path == "" {
+		return fmt.Errorf("database.path must not be empty")
+	}
+	if c.HTTP.BaseURL == "" {
+		return fmt.Errorf("http.base_url must not be empty")
+	}
+	if c.Paste.IDLength <= 0 {
+		return fmt.Errorf("paste.id_length must be greater than zero, got %d", c.Paste.IDLength)
+	}
+	for name, tier := range map[string]PasteTierConfig{
+		"anonymous":     c.Paste.Defaults.Anonymous,
+		"authenticated": c.Paste.Defaults.Authenticated,
+	} {
+		if tier.MaxSize <= 0 {
+			return fmt.Errorf("paste.defaults.%s.max_size must be greater than zero", name)
+		}
+		if tier.ExpiryLength <= 0 {
+			return fmt.Errorf("paste.defaults.%s.expiry_length must be greater than zero", name)
+		}
+	}
+
 	return nil
 }
 
