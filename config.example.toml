@@ -1,0 +1,29 @@
+[http]
+# When YAPS is behind a reverse proxy, use this header for getting the user IP, if none is set will assume the incoming
+# IP is the user IP
+# Example:
+#  - Cloudflare: CF-Connecting-IP
+#  - Nginx: X-Real-IP
+#client_ip_header=""
+base_url = "https://yaps.sh"
+
+#[http.ratelimits.create]
+#max_requests=10
+#window="1h"
+
+[database]
+path = "data/yaps.db"
+
+[log]
+level = "info" # debug | info | warn | error
+
+[paste]
+id_length = 10
+
+[paste.defaults.anonymous]
+expiry_length = "720h" # 30 days in hours
+max_size = "512KB"
+
+[paste.defaults.authenticated]
+expiry_length = "8765h" # Roughly 1 year in hours
+max_size = "2MB"

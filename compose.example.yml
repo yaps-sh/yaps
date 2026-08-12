@@ -1,0 +1,13 @@
+services:
+  yaps:
+    image: ghcr.io/yaps-sh/yaps:latest
+    container_name: yaps
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config.toml:/data/config.toml:ro
+      - yaps-data:/data/data
+
+volumes:
+  yaps-data:

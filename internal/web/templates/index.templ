@@ -1,0 +1,397 @@
+package templates
+
+templ index(primary []string, all []string) {
+	<style>
+    .editor-wrap {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+    }
+
+    .paste-input {
+        flex: 1;
+        width: 100%;
+        background: var(--background);
+        color: var(--foreground);
+        border: none;
+        outline: none;
+        resize: none;
+        padding: 1.25rem;
+        font-family: var(--font-mono);
+        font-size: 0.9rem;
+        line-height: 1.6;
+        tab-size: 4;
+    }
+    
+    .paste-input::placeholder {
+        color: var(--foreground-faint);
+    }
+
+    .bottom-bar {
+        flex-shrink: 0;
+        border-top: 1px solid var(--border);
+        background: var(--background-raised);
+        padding: 0.65rem 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .bottom-bar-left {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .bottom-bar-right {
+        display: flex;
+        align-items: center;
+        gap: 1.1rem;
+    }
+
+    .btn-ghost {
+        appearance: none;
+        background: transparent;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        border-radius: var(--radius);
+        padding: 0.4rem 0.9rem;
+        font-family: var(--font-sans);
+        font-size: 0.82rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .btn-ghost:hover {
+        background: var(--accent);
+        color: var(--background);
+    }
+
+    .btn-ghost:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+
+    .submit-error {
+        font-size: 0.78rem;
+        color: #e05a5a;
+        display: none;
+    }
+
+    .submit-error.visible {
+        display: inline;
+    }
+
+    .kbd-hint {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-family: var(--font-sans);
+        font-size: 0.75rem;
+        color: var(--foreground-faint);
+    }
+
+    .kbd-hint kbd {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        color: var(--foreground-muted);
+        background: var(--background);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.05rem 0.35rem;
+    }
+
+    .lang-trigger {
+    			appearance: none;
+    			background: var(--background);
+    			border: 1px solid var(--border);
+    			border-radius: 999px;
+    			padding: 0.35rem 1.75rem 0.35rem 0.75rem;
+    			font-family: var(--font-sans);
+    			font-size: 0.8rem;
+    			color: var(--foreground-muted);
+    			cursor: pointer;
+    			background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b8f96' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    			background-repeat: no-repeat;
+    			background-position: right 0.7rem center;
+    		}
+
+    		.lang-trigger:hover {
+    			border-color: var(--foreground-faint);
+    			color: var(--foreground);
+    		}
+
+    		.lang-trigger:focus-visible,
+    		.lang-trigger.open {
+    			outline: 2px solid var(--accent);
+    			outline-offset: 2px;
+    		}
+
+    		.bottom-bar-left {
+    			position: relative;
+    		}
+
+    		.lang-panel {
+    			position: absolute;
+    			bottom: calc(100% + 0.5rem);
+    			left: 0;
+    			width: 260px;
+    			max-height: 320px;
+    			background: var(--background-raised);
+    			border: 1px solid var(--border);
+    			border-radius: 6px;
+    			box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    			display: none;
+    			flex-direction: column;
+    			overflow: hidden;
+    			z-index: 20;
+    		}
+
+    		.lang-panel.open {
+    			display: flex;
+    		}
+
+    		.lang-search {
+    			flex-shrink: 0;
+    			background: var(--background);
+    			border: none;
+    			border-bottom: 1px solid var(--border);
+    			color: var(--foreground);
+    			padding: 0.6rem 0.75rem;
+    			font-family: var(--font-sans);
+    			font-size: 0.82rem;
+    		}
+
+    		.lang-search:focus {
+    			outline: none;
+    		}
+
+    		.lang-search::placeholder {
+    			color: var(--foreground-faint);
+    		}
+
+    		.lang-list {
+    			overflow-y: auto;
+    			padding: 0.35rem;
+    		}
+
+    		.lang-group-label {
+    			font-size: 0.68rem;
+    			text-transform: uppercase;
+    			letter-spacing: 0.05em;
+    			color: var(--foreground-faint);
+    			padding: 0.5rem 0.6rem 0.3rem;
+    		}
+
+    		.lang-option {
+    			display: block;
+    			width: 100%;
+    			text-align: left;
+    			background: none;
+    			border: none;
+    			color: var(--foreground);
+    			padding: 0.4rem 0.6rem;
+    			font-family: var(--font-sans);
+    			font-size: 0.82rem;
+    			border-radius: 4px;
+    			cursor: pointer;
+    		}
+
+    		.lang-option:hover {
+    			background: var(--background);
+    			color: var(--accent);
+    		}
+
+    		.lang-option.selected {
+    			color: var(--accent);
+    		}
+
+    		.lang-option.selected::after {
+    			content: '✓';
+    			float: right;
+    		}
+
+    		.lang-empty {
+    			padding: 1rem 0.75rem;
+    			font-size: 0.8rem;
+    			color: var(--foreground-faint);
+    			text-align: center;
+    		}
+
+    		.lang-list::-webkit-scrollbar { width: 8px; }
+    		.lang-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    </style>
+	<div class="editor-wrap">
+		<textarea id="content" class="paste-input" placeholder="Paste here..." spellcheck="false" autofocus></textarea>
+	</div>
+	<div class="bottom-bar">
+		<div class="bottom-bar-left">
+			<button type="button" class="lang-trigger" id="langTrigger">auto-detect</button>
+			<div class="lang-panel" id="langPanel">
+				<input type="text" class="lang-search" id="langSearch" placeholder="Search languages..."/>
+				<div class="lang-list" id="langList"></div>
+			</div>
+		</div>
+		<div class="bottom-bar-right">
+			<span class="kbd-hint"><kbd>Ctrl</kbd>+<kbd>S</kbd> to create</span>
+			<span id="submitError" class="submit-error">Something went wrong</span>
+			<button type="button" id="createBtn" class="btn-ghost">Create Paste</button>
+		</div>
+	</div>
+	@templ.JSONScript("primary-languages-data", primary)
+	@templ.JSONScript("all-languages-data", all)
+	<script>
+        const primaryLanguages = JSON.parse(document.getElementById('primary-languages-data').textContent);
+        const allLanguages = JSON.parse(document.getElementById('all-languages-data').textContent);
+    </script>
+	<script>
+        (function () {
+            const textarea = document.getElementById('content');
+            const btn = document.getElementById('createBtn');
+            const errorEl = document.getElementById('submitError');
+            const trigger = document.getElementById('langTrigger');
+            const panel = document.getElementById('langPanel');
+            const search = document.getElementById('langSearch');
+            const list = document.getElementById('langList');
+
+            let selectedLanguage = 'auto';
+
+            function renderList(filter) {
+                const q = filter.trim().toLowerCase();
+                list.innerHTML = '';
+
+                if (q === '') {
+                    appendGroup('Common', primaryLanguages);
+                    appendGroup('All languages', allLanguages);
+                    return;
+                }
+
+                const matches = ['auto', ...primaryLanguages, ...allLanguages].filter(l => l.includes(q));
+                if (matches.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'lang-empty';
+                    empty.textContent = 'No matching languages';
+                    list.appendChild(empty);
+                    return;
+                }
+                appendGroup(null, matches);
+            }
+
+            function appendGroup(label, items) {
+                if (items.length === 0) return;
+                if (label) {
+                    const heading = document.createElement('div');
+                    heading.className = 'lang-group-label';
+                    heading.textContent = label;
+                    list.appendChild(heading);
+                }
+                items.forEach(name => {
+                    const btnEl = document.createElement('button');
+                    btnEl.type = 'button';
+                    btnEl.className = 'lang-option' + (name === selectedLanguage ? ' selected' : '');
+                    btnEl.textContent = name === 'auto' ? 'auto-detect' : name;
+                    btnEl.addEventListener('click', () => {
+                        selectedLanguage = name;
+                        trigger.textContent = name === 'auto' ? 'auto-detect' : name;
+                        closePanel();
+                    });
+                    list.appendChild(btnEl);
+                });
+            }
+
+            function openPanel() {
+                panel.classList.add('open');
+                trigger.classList.add('open');
+                search.value = '';
+                renderList('');
+                search.focus();
+            }
+
+            function closePanel() {
+                panel.classList.remove('open');
+                trigger.classList.remove('open');
+            }
+
+            trigger.addEventListener('click', () => {
+                if (panel.classList.contains('open')) {
+                    closePanel();
+                } else {
+                    openPanel();
+                }
+            });
+
+            search.addEventListener('input', () => renderList(search.value));
+
+            document.addEventListener('click', (e) => {
+                if (!panel.contains(e.target) && e.target !== trigger) {
+                    closePanel();
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closePanel();
+            });
+
+            function showError(message) {
+                errorEl.textContent = message;
+                errorEl.classList.add('visible');
+            }
+
+            function clearError() {
+                errorEl.classList.remove('visible');
+            }
+
+            async function createPaste() {
+                const content = textarea.value;
+                if (content.trim() === '') {
+                    return;
+                }
+
+                clearError();
+                btn.disabled = true;
+                const originalLabel = btn.textContent;
+                btn.textContent = 'Creating…';
+
+                const payload = { content: content };
+                if (selectedLanguage !== 'auto') {
+                    payload.language = selectedLanguage;
+                }
+
+                try {
+                    const res = await fetch('/api/v1/paste', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+
+                    if (!res.ok) {
+                        const body = await res.json().catch(() => null);
+                        showError(body && body.error ? body.error : 'Failed to create paste (' + res.status + ')');
+                        btn.disabled = false;
+                        btn.textContent = originalLabel;
+                        return;
+                    }
+
+                    const data = await res.json();
+                    window.location.href = data.url;
+                } catch (err) {
+                    showError('Network error, try again');
+                    btn.disabled = false;
+                    btn.textContent = originalLabel;
+                }
+            }
+
+            btn.addEventListener('click', createPaste);
+
+            textarea.addEventListener('keydown', function (e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    createPaste();
+                }
+            });
+        })();
+    	</script>
+}
