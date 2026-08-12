@@ -5,6 +5,7 @@ GOOSE_ENV := GOOSE_DRIVER=sqlite3 GOOSE_DBSTRING=./data/yaps.db
 .PHONY: generate
 generate:
 	sqlc generate
+	templ generate
 
 .PHONY: migrate/up
 migrate/up:
