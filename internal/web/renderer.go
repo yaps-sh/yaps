@@ -46,7 +46,7 @@ func (rn *Renderer) RenderView(w http.ResponseWriter, r *http.Request, entry *pa
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	if err := templates.View(entry, highlighted).Render(r.Context(), w); err != nil {
+	if err := templates.View(entry, highlighted, entry.Content).Render(r.Context(), w); err != nil {
 		slog.ErrorContext(r.Context(), "failed to render view", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return

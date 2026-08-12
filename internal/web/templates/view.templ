@@ -5,7 +5,7 @@ import (
 	"github.com/yaps-sh/yaps/internal/paste"
 )
 
-templ view(entry *paste.Entry, hightlighted string) {
+templ view(entry *paste.Entry, hightlighted string, rawContent string) {
 	<style>
 		.bottom-bar {
 			flex-shrink: 0;
@@ -116,6 +116,7 @@ templ view(entry *paste.Entry, hightlighted string) {
 	<div class="view-content-wrap">
 		@templ.Raw(hightlighted)
 	</div>
+	<template id="paste-raw">{ rawContent }</template>
 	<div class="bottom-bar">
 		<div class="bottom-bar-left">
 			if entry.Filename != nil {
@@ -134,16 +135,17 @@ templ view(entry *paste.Entry, hightlighted string) {
 	</div>
 	<script>
 		function copyPasteContent(btn) {
-			const content = document.querySelector('.view-content-wrap').textContent;
-			navigator.clipboard.writeText(content).then(() => {
-				const original = btn.textContent;
-				btn.textContent = 'Copied';
-				btn.disabled = true;
-				setTimeout(() => {
-					btn.textContent = original;
-					btn.disabled = false;
-				}, 1500);
-			});
-		}
+            const tpl = document.getElementById('paste-raw');
+            const content = tpl ? tpl.content.textContent : '';
+            navigator.clipboard.writeText(content).then(() => {
+                const original = btn.textContent;
+                btn.textContent = 'Copied';
+                btn.disabled = true;
+                setTimeout(() => {
+                    btn.textContent = original;
+                    btn.disabled = false;
+                }, 1500);
+            });
+        }
 	</script>
 }

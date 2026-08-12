@@ -11,9 +11,9 @@ templ Index() {
 	}
 }
 
-templ View(entry *paste.Entry, highlighted string) {
+templ View(entry *paste.Entry, highlighted string, rawContent string) {
 	@layout(title(entry)) {
-		@view(entry, highlighted)
+		@view(entry, highlighted, rawContent)
 	}
 }
 
