@@ -11,6 +11,9 @@ base_url = "https://yaps.sh"
 #max_requests=10
 #window="1h"
 
+[database]
+path = "data/yaps.db"
+
 [paste]
 id_length = 10
 
