@@ -11,16 +11,16 @@ templ Index() {
 	}
 }
 
-templ View(entry *paste.Entry) {
+templ View(entry *paste.Entry, highlighted string) {
 	@layout(title(entry)) {
-		@view(entry)
+		@view(entry, highlighted)
 	}
 }
 
 func title(entry *paste.Entry) string {
 	if entry.Filename != nil {
-		return fmt.Sprintf("%s - yaps.sh", *entry.Filename)
+		return fmt.Sprintf("yaps.sh - %s", *entry.Filename)
 	}
 
-	return fmt.Sprintf("%s - yaps.sh", entry.ID)
+	return fmt.Sprintf("yaps.sh - %s", entry.ID)
 }

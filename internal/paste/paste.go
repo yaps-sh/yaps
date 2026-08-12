@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/alecthomas/chroma/v3/lexers"
 	"github.com/yaps-sh/yaps/internal/database"
 	"github.com/yaps-sh/yaps/internal/database/sqlc"
 )
@@ -180,7 +181,19 @@ func generateID(length int) (string, error) {
 }
 
 func detectLanguage(filename *string, content string) string {
-	_ = filename
-	_ = content
+	if filename != nil && *filename != "" {
+		if lexer := lexers.Match(*filename); lexer != nil {
+			slog.Debug("detected language from filename", "language", lexer.Config().Name)
+			return lexer.Config().Name
+		}
+	}
+
+	if lexer := lexers.Analyse(content); lexer != nil {
+		slog.Debug("detected language", "language", lexer.Config().Name)
+		return lexer.Config().Name
+	}
+
+	slog.Debug("falling back to plaintext")
+
 	return "plaintext"
 }

@@ -13,6 +13,8 @@ require (
 
 require (
 	github.com/a-h/templ v0.3.1020 // indirect
+	github.com/alecthomas/chroma/v3 v3.0.0-alpha.5 // indirect
+	github.com/dlclark/regexp2/v2 v2.2.2 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect

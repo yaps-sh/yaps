@@ -68,6 +68,7 @@ func main() {
 	// TODO add ratelimiting middleware, make it configurable. should also only apply to the create paste endpoint
 
 	r.Get("/", webHandler.Index)
+	r.Get("/static/chroma.css", webHandler.HighlightCSS)
 
 	r.Route(
 		"/api/v1", func(r chi.Router) {

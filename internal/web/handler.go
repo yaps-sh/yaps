@@ -57,6 +57,10 @@ func (h *Handler) Index(w http.ResponseWriter, r *http.Request) {
 	h.rendererSvc.RenderIndex(w, r)
 }
 
+func (h *Handler) HighlightCSS(w http.ResponseWriter, r *http.Request) {
+	h.rendererSvc.RenderHighlightCSS(w, r)
+}
+
 func (h *Handler) CreatePaste(w http.ResponseWriter, r *http.Request) {
 	// TODO switch this based on the auth status
 	limit := int64(h.cfg.Paste.Defaults.Anonymous.MaxSize)
@@ -157,7 +161,7 @@ func (h *Handler) GetPaste(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// extension := chi.URLParam(r, "ext")
+	extension := chi.URLParam(r, "ext")
 	viewMode := r.URL.Query().Get("view")
 
 	switch viewMode {
@@ -167,11 +171,11 @@ func (h *Handler) GetPaste(w http.ResponseWriter, r *http.Request) {
 
 	case "preview":
 		// TODO: this needs to be the preview system
-		h.renderDefault(w, r, entry)
+		h.renderDefault(w, r, entry, extension)
 		return
 
 	case "":
-		h.renderDefault(w, r, entry)
+		h.renderDefault(w, r, entry, extension)
 		return
 
 	default:
@@ -181,10 +185,10 @@ func (h *Handler) GetPaste(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (h *Handler) renderDefault(w http.ResponseWriter, r *http.Request, entry *paste.Entry) {
+func (h *Handler) renderDefault(w http.ResponseWriter, r *http.Request, entry *paste.Entry, ext string) {
 	// TODO: add all the chroma stuff here, but that's a TODO for once I get it working
 
-	h.rendererSvc.RenderView(w, r, entry)
+	h.rendererSvc.RenderView(w, r, entry, ext)
 }
 
 func writeRaw(w http.ResponseWriter, content string) {
