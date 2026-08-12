@@ -1,7 +1,26 @@
 package templates
 
+import (
+	"fmt"
+	"github.com/yaps-sh/yaps/internal/paste"
+)
+
 templ Index() {
 	@layout("yaps.sh") {
 		@index()
 	}
+}
+
+templ View(entry *paste.Entry) {
+	@layout(title(entry)) {
+		@view(entry)
+	}
+}
+
+func title(entry *paste.Entry) string {
+	if entry.Filename != nil {
+		return fmt.Sprintf("%s - yaps.sh", *entry.Filename)
+	}
+
+	return fmt.Sprintf("%s - yaps.sh", entry.ID)
 }

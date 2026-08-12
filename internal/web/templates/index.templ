@@ -16,13 +16,13 @@ templ index() {
         border: none;
         outline: none;
         resize: none;
-        padding: 3.5rem 1.25rem 1rem 1.25rem;
+        padding: 1.25rem;
         font-family: var(--font-mono);
         font-size: 0.9rem;
         line-height: 1.6;
         tab-size: 4;
     }
-
+    
     .paste-input::placeholder {
         color: var(--foreground-faint);
     }
@@ -75,6 +75,16 @@ templ index() {
         outline-offset: 2px;
     }
 
+    .submit-error {
+        font-size: 0.78rem;
+        color: #e05a5a;
+        display: none;
+    }
+
+    .submit-error.visible {
+        display: inline;
+    }
+
     .lang-select {
         appearance: none;
         background: var(--background);
@@ -125,18 +135,79 @@ templ index() {
     }
     </style>
 	<div class="editor-wrap">
-		<textarea class="paste-input" placeholder="Paste your text here..." spellcheck="false" autofocus></textarea>
+		<textarea id="content" class="paste-input" placeholder="Paste here..." spellcheck="false" autofocus></textarea>
 	</div>
 	<div class="bottom-bar">
 		<div class="bottom-bar-left">
-			<select class="lang-select">
+			<select id="langSelect" class="lang-select">
 				<option value="auto">auto-detect</option>
 				<option value="text">text</option>
 			</select>
 		</div>
 		<div class="bottom-bar-right">
-			<span class="kbd-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> to create</span>
-			<button type="button" class="btn-ghost">Create Paste</button>
+			<span class="kbd-hint"><kbd>Ctrl</kbd>+<kbd>S</kbd> to create</span>
+			<span id="submitError" class="submit-error">Something went wrong</span>
+			<button type="button" id="createBtn" class="btn-ghost">Create Paste</button>
 		</div>
 	</div>
+	<script>
+        (function () {
+            const textarea = document.getElementById('content');
+            const btn = document.getElementById('createBtn');
+            const errorEl = document.getElementById('submitError');
+
+            function showError(message) {
+                errorEl.textContent = message;
+                errorEl.classList.add('visible');
+            }
+
+            function clearError() {
+                errorEl.classList.remove('visible');
+            }
+
+            async function createPaste() {
+                const content = textarea.value;
+                if (content.trim() === '') {
+                    return;
+                }
+
+                clearError();
+                btn.disabled = true;
+                const originalLabel = btn.textContent;
+                btn.textContent = 'Creating…';
+
+                try {
+                    const res = await fetch('/api/v1/paste', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content: content }),
+                    });
+
+                    if (!res.ok) {
+                        const body = await res.json().catch(() => null);
+                        showError(body && body.error ? body.error : 'Failed to create paste (' + res.status + ')');
+                        btn.disabled = false;
+                        btn.textContent = originalLabel;
+                        return;
+                    }
+
+                    const data = await res.json();
+                    window.location.href = data.url;
+                } catch (err) {
+                    showError('Network error, try again');
+                    btn.disabled = false;
+                    btn.textContent = originalLabel;
+                }
+            }
+
+            btn.addEventListener('click', createPaste);
+
+            textarea.addEventListener('keydown', function (e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    createPaste();
+                }
+            });
+        })();
+    	</script>
 }

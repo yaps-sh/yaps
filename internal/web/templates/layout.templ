@@ -53,15 +53,19 @@ templ layout(title string) {
                     flex-shrink: 0;
                 }
 
+                .top-bar {
+                	flex-shrink: 0;
+                	border-bottom: 1px solid var(--border);
+                	background: var(--background-raised);
+                	padding: 0.65rem 1.25rem;
+                }
+
                 .brand {
-                    position: fixed;
-                    top: 1rem;
-                    left: 1.25rem;
-                    z-index: 10;
-                    font-family: var(--font-mono);
-                    font-size: 0.85rem;
-                    font-weight: 500;
-                    letter-spacing: 0.02em;
+                	display: inline-block;
+                	font-family: var(--font-mono);
+                	font-size: 0.85rem;
+                	font-weight: 500;
+                	letter-spacing: 0.02em;
                 }
 
                 .brand:hover .brand-yaps {
@@ -80,9 +84,11 @@ templ layout(title string) {
 		</head>
 		<body>
 			<div class="accent-line"></div>
-			<a href="/about" class="brand">
-				<span class="brand-yaps">yaps</span><span class="brand-sh">.sh</span>
-			</a>
+			<div class="top-bar">
+				<a href="/about" class="brand">
+					<span class="brand-yaps">yaps</span><span class="brand-sh">.sh</span>
+				</a>
+			</div>
 			{ children... }
 		</body>
 	</html>

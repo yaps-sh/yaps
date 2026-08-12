@@ -1,0 +1,151 @@
+package templates
+
+import (
+	"github.com/dustin/go-humanize"
+	"github.com/yaps-sh/yaps/internal/paste"
+)
+
+templ view(entry *paste.Entry) {
+	<style>
+		.bottom-bar {
+			flex-shrink: 0;
+			border-top: 1px solid var(--border);
+			background: var(--background-raised);
+			padding: 0.65rem 1.25rem;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 1rem;
+			flex-wrap: wrap;
+		}
+
+		.bottom-bar-left {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+			min-width: 0;
+		}
+
+		.bottom-bar-right {
+			display: flex;
+			align-items: center;
+			gap: 1.1rem;
+			flex-shrink: 0;
+		}
+
+		.view-filename {
+			font-family: var(--font-mono);
+			font-size: 0.85rem;
+			color: var(--foreground);
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		.view-filename.untitled {
+			color: var(--foreground-faint);
+			font-style: normal;
+		}
+
+		.view-tag {
+			display: inline-flex;
+			align-items: center;
+			background: var(--background);
+			border: 1px solid var(--border);
+			border-radius: 999px;
+			padding: 0.2rem 0.65rem;
+			font-family: var(--font-sans);
+			font-size: 0.75rem;
+			color: var(--foreground-muted);
+			flex-shrink: 0;
+		}
+
+		.action-link {
+			font-size: 0.82rem;
+			color: var(--foreground-muted);
+			transition: color 0.15s ease;
+		}
+
+		.action-link:hover {
+			color: var(--foreground);
+		}
+
+		.action-link.primary {
+			color: var(--accent);
+			font-weight: 500;
+		}
+
+		.action-link.primary:hover {
+			color: var(--accent);
+			opacity: 0.85;
+		}
+
+		.copy-link {
+			appearance: none;
+			background: none;
+			border: none;
+			padding: 0;
+			font-family: inherit;
+			cursor: pointer;
+		}
+
+		.copy-link:disabled {
+			cursor: default;
+			opacity: 0.7;
+		}
+
+		.view-content-wrap {
+			flex: 1;
+			display: flex;
+			min-height: 0;
+			overflow: auto;
+		}
+
+		.view-content {
+			flex: 1;
+			margin: 0;
+			padding: 1.25rem;
+			background: var(--background);
+			color: var(--foreground);
+			font-family: var(--font-mono);
+			font-size: 0.9rem;
+			line-height: 1.6;
+			white-space: pre-wrap;
+			word-break: break-word;
+			tab-size: 4;
+		}
+	</style>
+	<div class="view-content-wrap">
+		<pre class="view-content">{ entry.Content }</pre>
+	</div>
+	<div class="bottom-bar">
+		<div class="bottom-bar-left">
+			if entry.Filename != nil {
+				<span class="view-filename">{ *entry.Filename }</span>
+			} else {
+				<span class="view-filename untitled">untitled</span>
+			}
+			<span class="view-tag">{ entry.DetectedLanguage }</span>
+			<span class="view-tag">{ humanize.Bytes(uint64(entry.SizeBytes)) }</span>
+		</div>
+		<div class="bottom-bar-right">
+			<button type="button" class="action-link copy-link" onclick="copyPasteContent(this)">Copy</button>
+			<a href={ templ.URL("?view=raw") } class="action-link">Raw</a>
+			<a href="/" class="action-link primary">New Paste</a>
+		</div>
+	</div>
+	<script>
+		function copyPasteContent(btn) {
+			const content = document.querySelector('.view-content').textContent;
+			navigator.clipboard.writeText(content).then(() => {
+				const original = btn.textContent;
+				btn.textContent = 'Copied';
+				btn.disabled = true;
+				setTimeout(() => {
+					btn.textContent = original;
+					btn.disabled = false;
+				}, 1500);
+			});
+		}
+	</script>
+}

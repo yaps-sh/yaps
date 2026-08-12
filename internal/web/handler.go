@@ -183,10 +183,8 @@ func (h *Handler) GetPaste(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) renderDefault(w http.ResponseWriter, r *http.Request, entry *paste.Entry) {
 	// TODO: add all the chroma stuff here, but that's a TODO for once I get it working
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(entry.Content))
+
+	h.rendererSvc.RenderView(w, r, entry)
 }
 
 func writeRaw(w http.ResponseWriter, content string) {
