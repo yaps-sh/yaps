@@ -2,8 +2,11 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -13,7 +16,12 @@ import (
 type Config struct {
 	Database DatabaseConfig `toml:"database"`
 	HTTP     HTTPConfig     `toml:"http"`
+	Log      LogConfig      `toml:"log"`
 	Paste    PasteConfig    `toml:"paste"`
+}
+
+type LogConfig struct {
+	Level string `toml:"level"`
 }
 
 type DatabaseConfig struct {
@@ -43,6 +51,12 @@ func defaults() *Config {
 	return &Config{
 		Database: DatabaseConfig{
 			Path: "data/yaps.db",
+		},
+		HTTP: HTTPConfig{
+			BaseURL: "http://localhost:3000",
+		},
+		Log: LogConfig{
+			Level: "info",
 		},
 		Paste: PasteConfig{
 			IDLength: 10,
@@ -82,7 +96,34 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	if _, err := parseLogLevel(c.Log.Level); err != nil {
+		return fmt.Errorf("log.level: %w", err)
+	}
+
 	return nil
+}
+
+func (c *Config) LogLevel() slog.Level {
+	lvl, err := parseLogLevel(c.Log.Level)
+	if err != nil {
+		return slog.LevelInfo
+	}
+	return lvl
+}
+
+func parseLogLevel(s string) (slog.Level, error) {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "debug":
+		return slog.LevelDebug, nil
+	case "info", "":
+		return slog.LevelInfo, nil
+	case "warn", "warning":
+		return slog.LevelWarn, nil
+	case "error":
+		return slog.LevelError, nil
+	default:
+		return 0, fmt.Errorf("invalid log level %q (want debug|info|warn|error)", s)
+	}
 }
 
 func Load(path string) (*Config, error) {
@@ -90,6 +131,12 @@ func Load(path string) (*Config, error) {
 
 	data, err := os.ReadFile(path)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			if err = cfg.Validate(); err != nil {
+				return nil, fmt.Errorf("failed to validate config: %w", err)
+			}
+			return cfg, nil
+		}
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -28,34 +29,48 @@ var (
 const shutdownTimeout = 10 * time.Second
 
 func main() {
-	slog.SetDefault(
-		slog.New(
-			slog.NewTextHandler(
-				os.Stdout, &slog.HandlerOptions{
-					Level: slog.LevelDebug, // TODO: change this to level and have it change on config load?
-				},
-			),
-		),
-	)
+	if err := run(); err != nil {
+		slog.Error("application failed", "error", err)
+		os.Exit(1)
+	}
+}
 
+func run() error {
 	configPath := flag.String("config", "config.toml", "Path to TOML config file")
 	flag.Parse()
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {
-		slog.Error("Failed to load config", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("load config: %w", err)
 	}
 
-	slog.Debug("Loaded config", "config", cfg)
+	slog.SetDefault(
+		slog.New(
+			slog.NewTextHandler(
+				os.Stdout, &slog.HandlerOptions{
+					Level: cfg.LogLevel(),
+				},
+			),
+		),
+	)
+
+	slog.Debug(
+		"Loaded config",
+		"database.path", cfg.Database.Path,
+		"http.base_url", cfg.HTTP.BaseURL,
+		"paste.id_length", cfg.Paste.IDLength,
+		"paste.defaults.anonymous.expiry_length", cfg.Paste.Defaults.Anonymous.ExpiryLength,
+		"paste.defaults.anonymous.max_size", cfg.Paste.Defaults.Anonymous.MaxSize,
+		"paste.defaults.authenticated.expiry_length", cfg.Paste.Defaults.Authenticated.ExpiryLength,
+		"paste.defaults.authenticated.max_size", cfg.Paste.Defaults.Authenticated.MaxSize,
+	)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	db, err := database.New(ctx, cfg.Database)
 	if err != nil {
-		slog.Error("Failed to create database", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("create database: %w", err)
 	}
 	defer closeWithTimeout("database", db.Close)
 
@@ -107,8 +122,7 @@ func main() {
 	select {
 	case err := <-errCh:
 		if err != nil {
-			slog.Error("server failed", "error", err)
-			os.Exit(1)
+			return fmt.Errorf("server failed: %w", err)
 		}
 	case <-ctx.Done():
 		slog.Info("shutdown signal received, draining connections")
@@ -117,9 +131,11 @@ func main() {
 		defer cancel()
 
 		if err := srv.Shutdown(shutdownCtx); err != nil {
-			slog.Error("error during server shutdown", "error", err)
+			return fmt.Errorf("server shutdown: %w", err)
 		}
 	}
+
+	return nil
 }
 
 func closeWithTimeout(name string, close func(ctx context.Context) error) {

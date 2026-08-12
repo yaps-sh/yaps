@@ -1,8 +1,11 @@
 package web
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"log/slog"
 	"strings"
+	"sync"
 
 	"github.com/alecthomas/chroma/v3"
 	"github.com/alecthomas/chroma/v3/formatters/html"
@@ -13,7 +16,20 @@ import (
 var (
 	formatter = html.New(html.WithClasses(true), html.WithLineNumbers(true))
 	style     = styles.Get("nord")
+
+	highlightCSSCache = sync.OnceValues(func() (string, error) {
+		var buf strings.Builder
+		if err := formatter.WriteCSS(&buf, style); err != nil {
+			return "", err
+		}
+		return buf.String(), nil
+	})
 )
+
+func highlightCSSETag(css string) string {
+	sum := sha256.Sum256([]byte(css))
+	return fmt.Sprintf("\"%x\"", sum)
+}
 
 func resolveLexer(lang, ext string) chroma.Lexer {
 	if ext != "" {
@@ -42,15 +58,6 @@ func highlight(lang, ext, content string) (string, error) {
 
 	var buf strings.Builder
 	if err := formatter.Format(&buf, style, iterator); err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
-}
-
-func highlightCSS() (string, error) {
-	var buf strings.Builder
-	if err := formatter.WriteCSS(&buf, style); err != nil {
 		return "", err
 	}
 

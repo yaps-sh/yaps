@@ -63,10 +63,7 @@ func (p *Paste) Create(ctx context.Context, params CreateParams) (*Entry, error)
 	expiresAt := now.Add(params.ExpiresIn)
 	sizeBytes := int64(len(params.Content))
 
-	var filename *string
-	if params.Filename != nil {
-		filename = params.Filename
-	}
+	filename := params.Filename
 
 	err = p.db.WriteQueries.CreatePaste(
 		ctx, sqlc.CreatePasteParams{
@@ -144,10 +141,7 @@ func fromRow(row sqlc.Paste) (*Entry, error) {
 		return nil, fmt.Errorf("failed to parse created at: %w", err)
 	}
 
-	var filename *string
-	if row.Filename != nil {
-		filename = row.Filename
-	}
+	filename := row.Filename
 
 	return &Entry{
 		ID:               row.ID,

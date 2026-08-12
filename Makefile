@@ -27,14 +27,16 @@ migrate/version:
 migrate/reset:
 	$(GOOSE_ENV) goose $(GOOSE_ARGS) reset
 
-.PHONY: migrate/force # usage: make migrate/force V=3
-migrate/force:
-	@test -n "$(V)" || (echo "usage: make migrate/force V=<version>" && exit 1)
-	$(GOOSE_ENV) goose $(GOOSE_ARGS) force-version $(V)
+.PHONY: migrate/up-to # usage: make migrate/up-to V=3
+migrate/up-to:
+	@test -n "$(V)" || (echo "usage: make migrate/up-to V=<version>" && exit 1)
+	$(GOOSE_ENV) goose $(GOOSE_ARGS) up-to $(V)
 
 .PHONY: migrate/create
 migrate/create:
 	goose $(GOOSE_ARGS) create $(filter-out $@,$(MAKECMDGOALS)) sql
 
 %:
-	@:
+	@if [ -z "$(filter migrate/create,$(MAKECMDGOALS))" ]; then \
+		echo "make: *** No rule to make target '$@'.  Stop." >&2; exit 2; \
+	fi
