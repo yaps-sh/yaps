@@ -5,7 +5,7 @@ VALUES (@id, @filename, @detected_language, @content, @size_bytes, @expires_at, 
 -- name: GetPaste :one
 SELECT *
 FROM paste
-WHERE id = @id;
+WHERE id = @id AND expires_at > @now;
 
 -- name: IncrementViewCount :exec
 UPDATE paste

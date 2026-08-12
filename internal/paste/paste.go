@@ -96,11 +96,20 @@ func (p *Paste) Create(ctx context.Context, params CreateParams) (*Entry, error)
 }
 
 func (p *Paste) Get(ctx context.Context, id string) (*Entry, error) {
-	row, err := p.db.ReadQueries.GetPaste(ctx, id)
+	row, err := p.db.ReadQueries.GetPaste(ctx, id, time.Now().UTC().Format(time.RFC3339))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get paste: %w", err)
 	}
 
+	e, err := fromRow(row)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert row to entry: %w", err)
+	}
+
+	return e, nil
+}
+
+func (p *Paste) IncrementViewCount(id string) {
 	go func() {
 		incCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -109,13 +118,6 @@ func (p *Paste) Get(ctx context.Context, id string) (*Entry, error) {
 			slog.WarnContext(incCtx, "failed to increment view count", "id", id, "err", incErr)
 		}
 	}()
-
-	e, err := fromRow(row)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert row to entry: %w", err)
-	}
-
-	return e, nil
 }
 
 func (p *Paste) incrementViewCount(ctx context.Context, id string) error {

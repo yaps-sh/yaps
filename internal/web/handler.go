@@ -1,6 +1,7 @@
 package web
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -157,7 +158,12 @@ func (h *Handler) GetPaste(w http.ResponseWriter, r *http.Request) {
 
 	entry, err := h.pasteSvc.Get(r.Context(), id)
 	if err != nil {
-		http.NotFound(w, r)
+		if errors.Is(err, sql.ErrNoRows) {
+			http.NotFound(w, r)
+			return
+		}
+		slog.ErrorContext(r.Context(), "failed to fetch paste", "id", id, "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -171,10 +177,12 @@ func (h *Handler) GetPaste(w http.ResponseWriter, r *http.Request) {
 
 	case "preview":
 		// TODO: this needs to be the preview system
+		h.pasteSvc.IncrementViewCount(id)
 		h.renderDefault(w, r, entry, extension)
 		return
 
 	case "":
+		h.pasteSvc.IncrementViewCount(id)
 		h.renderDefault(w, r, entry, extension)
 		return
 

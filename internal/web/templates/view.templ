@@ -134,7 +134,7 @@ templ view(entry *paste.Entry, hightlighted string) {
 	</div>
 	<script>
 		function copyPasteContent(btn) {
-			const content = document.querySelector('.view-content').textContent;
+			const content = document.querySelector('.view-content-wrap').textContent;
 			navigator.clipboard.writeText(content).then(() => {
 				const original = btn.textContent;
 				btn.textContent = 'Copied';

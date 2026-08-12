@@ -51,11 +51,16 @@ func (q *Queries) DeleteExpiredPastes(ctx context.Context, timestamp string) err
 const getPaste = `-- name: GetPaste :one
 SELECT id, filename, detected_language, content, size_bytes, view_count, expires_at, created_at
 FROM paste
-WHERE id = ?1
+WHERE id = ?1 AND expires_at > ?2
 `
 
-func (q *Queries) GetPaste(ctx context.Context, id string) (Paste, error) {
-	row := q.db.QueryRowContext(ctx, getPaste, id)
+type GetPasteParams struct {
+	ID  string
+	Now string
+}
+
+func (q *Queries) GetPaste(ctx context.Context, arg GetPasteParams) (Paste, error) {
+	row := q.db.QueryRowContext(ctx, getPaste, arg.ID, arg.Now)
 	var i Paste
 	err := row.Scan(
 		&i.ID,
