@@ -17,6 +17,7 @@ import (
 type Handler struct {
 	pasteSvc     *paste.Paste
 	validatorSvc *validator.Validate
+	rendererSvc  *Renderer
 	cfg          *config.Config
 }
 
@@ -43,12 +44,17 @@ type ErrorResponse struct {
 	RetryAfter int64  `json:"retry_after,omitempty"`
 }
 
-func New(pasteSvc *paste.Paste, cfg *config.Config) *Handler {
+func NewHandler(pasteSvc *paste.Paste, renderer *Renderer, cfg *config.Config) *Handler {
 	return &Handler{
 		pasteSvc:     pasteSvc,
 		validatorSvc: newValidator(),
+		rendererSvc:  renderer,
 		cfg:          cfg,
 	}
+}
+
+func (h *Handler) Index(w http.ResponseWriter, r *http.Request) {
+	h.rendererSvc.RenderIndex(w, r)
 }
 
 func (h *Handler) CreatePaste(w http.ResponseWriter, r *http.Request) {

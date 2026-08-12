@@ -54,7 +54,8 @@ func main() {
 	defer closeWithTimeout("database", db.Close)
 
 	pasteSvc := paste.New(db)
-	webHandler := web.New(pasteSvc, cfg)
+	rendererSvc := web.NewRenderer()
+	webHandler := web.NewHandler(pasteSvc, rendererSvc, cfg)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -66,11 +67,7 @@ func main() {
 	r.Use(middleware.StripSlashes)
 	// TODO add ratelimiting middleware, make it configurable. should also only apply to the create paste endpoint
 
-	r.Get(
-		"/", func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte("Hello World!"))
-		},
-	)
+	r.Get("/", webHandler.Index)
 
 	r.Route(
 		"/api/v1", func(r chi.Router) {
