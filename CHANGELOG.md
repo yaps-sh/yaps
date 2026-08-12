@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/yaps-sh/yaps/compare/v0.1.0...v0.2.0) (2026-08-12)
+
+
+### Features
+
+* initial yaps.sh source ([#1](https://github.com/yaps-sh/yaps/issues/1)) ([e6b64da](https://github.com/yaps-sh/yaps/commit/e6b64da3df6fe54bad2af4890dbc0b7c6b42c731))
+
 ## [0.1.0](https://github.com/yaps-sh/yaps/compare/yaps-v0.0.1...yaps-v0.1.0) (2026-08-12)
 
 
