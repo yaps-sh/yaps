@@ -96,7 +96,12 @@ func (p *Paste) Create(ctx context.Context, params CreateParams) (*Entry, error)
 }
 
 func (p *Paste) Get(ctx context.Context, id string) (*Entry, error) {
-	row, err := p.db.ReadQueries.GetPaste(ctx, id, time.Now().UTC().Format(time.RFC3339))
+	row, err := p.db.ReadQueries.GetPaste(
+		ctx, sqlc.GetPasteParams{
+			ID:  id,
+			Now: time.Now().UTC().Format(time.RFC3339),
+		},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get paste: %w", err)
 	}
