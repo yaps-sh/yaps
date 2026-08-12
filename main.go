@@ -19,6 +19,12 @@ import (
 	"github.com/yaps-sh/yaps/internal/web"
 )
 
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 const shutdownTimeout = 10 * time.Second
 
 func main() {
