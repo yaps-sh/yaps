@@ -1,17 +1,18 @@
 -- +goose Up
-create table if not exists paste (
-    id text primary key,
-    filename text,
-    detected_language text not null,
-    content text not null,
-    size_bytes integer not null,
-    view_count integer not null default 0,
+CREATE TABLE IF NOT EXISTS paste
+(
+    id                text PRIMARY KEY,
+    filename          text,
+    detected_language text    NOT NULL,
+    content           text    NOT NULL,
+    size_bytes        integer NOT NULL,
+    view_count        integer NOT NULL DEFAULT 0,
     -- Timestamps are ISO8601
-    expires_at text not null,
-    created_at text not null
+    expires_at        text    NOT NULL,
+    created_at        text    NOT NULL
 );
 
-create index if not exists paste_expires_at_idx on paste (expires_at);
+CREATE INDEX IF NOT EXISTS paste_expires_at_idx ON paste (expires_at);
 
 -- +goose Down
-DROp table if exists paste;
+DROP TABLE IF EXISTS paste;
