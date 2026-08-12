@@ -86,7 +86,7 @@ func main() {
 	r.Get("/{id:[a-zA-Z0-9]+}.{ext}", webHandler.GetPaste)
 
 	srv := &http.Server{
-		Addr:         ":3000", // TODO: config this too
+		Addr:         ":3000",
 		Handler:      r,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
