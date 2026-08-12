@@ -181,6 +181,8 @@ func (h *Handler) GetPaste(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("X-Robots-Tag", "noindex, nofollow")
+
 	extension := chi.URLParam(r, "ext")
 	viewMode := r.URL.Query().Get("view")
 
@@ -224,4 +226,10 @@ func writeJSON(w http.ResponseWriter, status int, body any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(body)
+}
+
+func (h *Handler) RobotsTXT(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+	_, _ = w.Write([]byte("User-agent: *\nAllow: /$\nDisallow: /\n"))
 }

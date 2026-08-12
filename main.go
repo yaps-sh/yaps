@@ -91,6 +91,7 @@ func run() error {
 	r.Get("/", webHandler.Index)
 	r.Get("/about", webHandler.About)
 	r.Get("/static/chroma.css", webHandler.HighlightCSS)
+	r.Get("/robots.txt", webHandler.RobotsTXT)
 
 	r.Route(
 		"/api/v1", func(r chi.Router) {
