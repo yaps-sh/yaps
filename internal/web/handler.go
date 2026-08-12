@@ -72,7 +72,7 @@ func (h *Handler) CreatePaste(w http.ResponseWriter, r *http.Request) {
 		if errors.As(err, &maxBytesErr) {
 			writeJSON(
 				w, http.StatusRequestEntityTooLarge, ErrorResponse{
-					Error:      "request entity too large",
+					Error:      "paste exceeds size limit for upload",
 					LimitBytes: limit,
 				},
 			)
