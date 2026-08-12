@@ -7,9 +7,9 @@ project_name: "yaps"
 
 before:
   hooks:
-    - go mod tidy
     - templ generate
     - sqlc generate
+    - go mod tidy
 
 builds:
   - id: yaps
