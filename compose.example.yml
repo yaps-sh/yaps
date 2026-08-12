@@ -7,4 +7,7 @@ services:
       - "3000:3000"
     volumes:
       - ./config.toml:/data/config.toml:ro
-      - ./data:/data/data
+      - yaps-data:/data/data
+
+volumes:
+  yaps-data:
