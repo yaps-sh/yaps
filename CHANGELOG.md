@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/yaps-sh/yaps/compare/v0.2.0...v0.3.0) (2026-08-12)
+
+
+### Features
+
+* add expired paste reaper functionality ([9ddc54a](https://github.com/yaps-sh/yaps/commit/9ddc54a305b72e651c57e6f9887145fe93ca3460))
+
 ## [0.2.0](https://github.com/yaps-sh/yaps/compare/v0.1.0...v0.2.0) (2026-08-12)
 
 
