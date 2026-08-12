@@ -76,9 +76,8 @@ func main() {
 		},
 	)
 
-	// TODO add regex to only allow the limited id values (letters, numbers)
-	r.Get("/{id}", webHandler.GetPaste)
-	r.Get("/{id}.{ext}", webHandler.GetPaste)
+	r.Get("/{id:[a-zA-Z0-9]+}", webHandler.GetPaste)
+	r.Get("/{id:[a-zA-Z0-9]+}.{ext}", webHandler.GetPaste)
 
 	srv := &http.Server{
 		Addr:         ":3000", // TODO: config this too
