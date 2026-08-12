@@ -11,6 +11,12 @@ templ Index() {
 	}
 }
 
+templ About() {
+	@layout("yaps.sh - about") {
+		@about()
+	}
+}
+
 templ View(entry *paste.Entry, highlighted string, rawContent string) {
 	@layout(title(entry)) {
 		@view(entry, highlighted, rawContent)

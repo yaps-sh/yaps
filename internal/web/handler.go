@@ -58,6 +58,10 @@ func (h *Handler) Index(w http.ResponseWriter, r *http.Request) {
 	h.rendererSvc.RenderIndex(w, r)
 }
 
+func (h *Handler) About(w http.ResponseWriter, r *http.Request) {
+	h.rendererSvc.RenderAbout(w, r)
+}
+
 func (h *Handler) HighlightCSS(w http.ResponseWriter, r *http.Request) {
 	h.rendererSvc.RenderHighlightCSS(w, r)
 }

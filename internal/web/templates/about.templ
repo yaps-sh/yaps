@@ -1,0 +1,136 @@
+package templates
+
+templ about() {
+	<style>
+    .about-wrap {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        display: flex;
+    }
+
+    .about-content {
+        width: 100%;
+        max-width: 640px;
+        padding: 2.5rem 1.25rem 3rem;
+        font-family: var(--font-sans);
+        font-size: 0.9rem;
+        line-height: 1.7;
+        color: var(--foreground);
+    }
+
+    .about-content h1 {
+        font-family: var(--font-mono);
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin: 0 0 1.5rem;
+        color: var(--foreground);
+    }
+
+    .about-content h2 {
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--foreground-muted);
+        margin: 2rem 0 0.75rem;
+    }
+
+    .about-content p {
+        margin: 0 0 1rem;
+        color: var(--foreground-muted);
+    }
+
+    .about-content a {
+        color: var(--accent);
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.15s ease;
+    }
+
+    .about-content a:hover {
+        border-bottom-color: var(--accent);
+    }
+
+    .about-content code {
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        background: var(--background-raised);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.1rem 0.35rem;
+        color: var(--foreground);
+    }
+
+    .about-content pre {
+        background: var(--background-raised);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 0.9rem 1rem;
+        overflow-x: auto;
+        margin: 0 0 1rem;
+    }
+
+    .about-content pre code {
+        background: none;
+        border: none;
+        padding: 0;
+    }
+
+    .about-content ul {
+        margin: 0 0 1rem;
+        padding-left: 1.25rem;
+        color: var(--foreground-muted);
+    }
+
+    .about-content li {
+        margin-bottom: 0.4rem;
+    }
+	</style>
+	<div class="about-wrap">
+		<div class="about-content">
+			<p>
+				A small, self-hostable pasting service. Minimal UI, no frills. One
+				binary, one SQLite file, no external dependencies.
+			</p>
+			<h2>Basic Usage</h2>
+			<p>
+				Paste your content, hit <code>Ctrl+S</code> or the Create button, and
+				you'll get a URL back. YAPS will do its best to guess the language, but you can override it with the
+				language selector or by adding the <code>.extension</code> at the end of the URL.
+			</p>
+			<h2>From the Console</h2>
+			<p>
+				Not easily available at this time, will be in a future release.
+			</p>
+			<h2>Paste Lifetime</h2>
+			<p>
+				By default, anonymous pastes will expire after 30 days unless otherwise specified in the config file.
+				They may be removed earlier and without notice.
+			</p>
+			<h2>Privacy</h2>
+			<p>
+				yaps.sh does not collect any personal information. All pastes are stored anonymously unless otherwise configured
+				and are subject to deletion at any time without notice.
+			</p>
+			<p>
+				While attempts are made to keep content from being indexed and crawled by search engines and AI bots, there
+				is no guarantee that this will always be the case. There is no expectation of privacy. Create pastes at
+				your own risk. YAPS is not responsible or liable for any loss of data or removed content.
+			</p>
+			<h2>Open Source</h2>
+			<p>
+				yaps.sh is open source, licensed AGPL-3.0. Source, issues, and
+				self-hosting instructions live on
+				<a href="https://github.com/yaps-sh/yaps" target="_blank" rel="noopener noreferrer">GitHub</a>.
+			</p>
+			<h2>Author</h2>
+			<p>
+				Created by <a href="https://github.com/MatthewSH" target="_blank" rel="noopener noreferrer">Matt Hatcher</a>.
+			</p>
+			<p>
+				Based on the work of John Crepezzi with Hastebin. Much love.
+			</p>
+		</div>
+	</div>
+}

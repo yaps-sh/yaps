@@ -89,6 +89,7 @@ func run() error {
 	// TODO add ratelimiting middleware, make it configurable. should also only apply to the create paste endpoint
 
 	r.Get("/", webHandler.Index)
+	r.Get("/about", webHandler.About)
 	r.Get("/static/chroma.css", webHandler.HighlightCSS)
 
 	r.Route(

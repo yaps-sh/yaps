@@ -29,6 +29,19 @@ func (rn *Renderer) RenderIndex(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(buf.Bytes())
 }
 
+func (rn *Renderer) RenderAbout(w http.ResponseWriter, r *http.Request) {
+	var buf bytes.Buffer
+	if err := templates.About().Render(r.Context(), &buf); err != nil {
+		slog.ErrorContext(r.Context(), "failed to render about", "err", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	_, _ = w.Write(buf.Bytes())
+}
+
 func etagMatches(values []string, etag string) bool {
 	want := strings.Trim(etag, "\"")
 	for _, v := range values {
