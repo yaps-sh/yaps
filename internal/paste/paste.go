@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	base62Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	base62Alphabet        = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	defaultReaperInterval = 15 * time.Minute
 )
 
 type Paste struct {
@@ -128,6 +129,39 @@ func (p *Paste) incrementViewCount(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (p *Paste) StartReaper(ctx context.Context, interval time.Duration) {
+	if interval <= 0 {
+		interval = defaultReaperInterval
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	slog.InfoContext(ctx, "expired paste reaper started", "interval", interval)
+	p.sweepExpired(ctx)
+
+	for {
+		select {
+		case <-ctx.Done():
+			slog.InfoContext(ctx, "expired paste reaper stopped")
+			return
+		case <-ticker.C:
+			p.sweepExpired(ctx)
+		}
+	}
+}
+
+func (p *Paste) sweepExpired(ctx context.Context) {
+	sweepCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	if err := p.db.WriteQueries.DeleteExpiredPastes(sweepCtx, now); err != nil {
+		slog.WarnContext(sweepCtx, "failed to delete expired pastes", "err", err)
+		return
+	}
+	slog.DebugContext(sweepCtx, "expired paste sweep completed")
 }
 
 func fromRow(row sqlc.Paste) (*Entry, error) {

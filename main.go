@@ -75,6 +75,7 @@ func run() error {
 	defer closeWithTimeout("database", db.Close)
 
 	pasteSvc := paste.New(db)
+	go pasteSvc.StartReaper(ctx, 0)
 	rendererSvc := web.NewRenderer()
 	webHandler := web.NewHandler(pasteSvc, rendererSvc, cfg)
 
