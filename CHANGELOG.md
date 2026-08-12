@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/yaps-sh/yaps/compare/v0.1.0...v0.2.0) (2026-08-12)
+
+
+### Features
+
+* add about page ([a308e77](https://github.com/yaps-sh/yaps/commit/a308e77eb4361300ce9d1a05e23a16f427ca6eb3))
+* add robots.txt ([fad3a7d](https://github.com/yaps-sh/yaps/commit/fad3a7d34391acda0bfa45c2e8502744727a2315))
+
 ## [0.1.0](https://github.com/yaps-sh/yaps/compare/yaps-v0.0.1...yaps-v0.1.0) (2026-08-12)
 
 
