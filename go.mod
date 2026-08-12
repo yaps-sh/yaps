@@ -3,6 +3,8 @@ module github.com/yaps-sh/yaps
 go 1.26.5
 
 require (
+	github.com/a-h/templ v0.3.1020
+	github.com/alecthomas/chroma/v3 v3.0.0-alpha.5
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-playground/validator/v10 v10.30.3
@@ -12,8 +14,6 @@ require (
 )
 
 require (
-	github.com/a-h/templ v0.3.1020 // indirect
-	github.com/alecthomas/chroma/v3 v3.0.0-alpha.5 // indirect
 	github.com/dlclark/regexp2/v2 v2.2.2 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
