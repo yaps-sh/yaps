@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.0](https://github.com/yaps-sh/yaps/compare/v0.5.0...v0.6.0) (2026-08-13)
+
+
+### Features
+
+* add better cache control ([91ac550](https://github.com/yaps-sh/yaps/commit/91ac550422113ce084d3d4152b187d255e9e16c6)), closes [#12](https://github.com/yaps-sh/yaps/issues/12)
+* add compression middleware ([bb82193](https://github.com/yaps-sh/yaps/commit/bb821932d512a0fbca289280b65cbe16f90b0759)), closes [#11](https://github.com/yaps-sh/yaps/issues/11)
+* add OG images and metadata ([#19](https://github.com/yaps-sh/yaps/issues/19)) ([8337e99](https://github.com/yaps-sh/yaps/commit/8337e990082ed87b4fe425bc456ab113bc611efe))
+* add wrap toggle ([ff5b08a](https://github.com/yaps-sh/yaps/commit/ff5b08a14381554e43697988b711cd60cecb124c)), closes [#15](https://github.com/yaps-sh/yaps/issues/15)
+
+
+### Bug Fixes
+
+* listen for shortcuts on entire page, not just text area ([82dfd66](https://github.com/yaps-sh/yaps/commit/82dfd663a744087790555d8b5efcab8cad451cb1)), closes [#16](https://github.com/yaps-sh/yaps/issues/16)
+
 ## [0.5.0](https://github.com/yaps-sh/yaps/compare/v0.4.0...v0.5.0) (2026-08-13)
 
 
