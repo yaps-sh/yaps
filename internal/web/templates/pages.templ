@@ -2,32 +2,60 @@ package templates
 
 import (
 	"fmt"
+
 	"github.com/yaps-sh/yaps/internal/build"
 	"github.com/yaps-sh/yaps/internal/paste"
 )
 
 templ Index() {
-	@layout("yaps.sh") {
+	@layout("yaps.sh", nil) {
 		@index(PrimaryLanguages, AllLanguages())
 	}
 }
 
 templ About(bld build.Info, latest string) {
-	@layout("yaps.sh - about") {
+	@layout("yaps.sh - about", nil) {
 		@about(bld, latest)
 	}
 }
 
-templ View(entry *paste.Entry, highlighted string) {
-	@layout(title(entry)) {
+templ View(entry *paste.Entry, highlighted string, baseURL string) {
+	@layout(title(entry), ogHead(entry, baseURL)) {
 		@view(entry, highlighted)
 	}
+}
+
+templ ogHead(entry *paste.Entry, baseURL string) {
+	<meta property="og:title" content={ ogTitle(entry) }/>
+	<meta property="og:description" content={ ogDescription() }/>
+	<meta property="og:image" content={ ogImageURL(entry, baseURL) }/>
+	<meta property="og:type" content="article"/>
+	<meta property="og:url" content={ fmt.Sprintf("%s/%s", baseURL, entry.ID) }/>
+	<meta property="og:site_name" content="yaps.sh"/>
+	<meta name="twitter:card" content="summary_large_image"/>
+	<meta name="twitter:title" content={ ogTitle(entry) }/>
+	<meta name="twitter:description" content={ ogDescription() }/>
+	<meta name="twitter:image" content={ ogImageURL(entry, baseURL) }/>
 }
 
 func title(entry *paste.Entry) string {
 	if entry.Filename != nil {
 		return fmt.Sprintf("yaps.sh - %s", *entry.Filename)
 	}
-
 	return fmt.Sprintf("yaps.sh - %s", entry.ID)
+}
+
+func ogTitle(entry *paste.Entry) string {
+	if entry.Filename != nil && *entry.Filename != "" {
+		return *entry.Filename
+	}
+	return fmt.Sprintf("yaps.sh/%s", entry.ID)
+}
+
+func ogDescription() string {
+	return "A paste on yaps.sh"
+}
+
+func ogImageURL(entry *paste.Entry, baseURL string) string {
+	return fmt.Sprintf("%s/%s/og.png", baseURL, entry.ID)
 }

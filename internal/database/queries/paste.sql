@@ -19,3 +19,9 @@ DELETE FROM paste WHERE id = @id;
 DELETE
 FROM paste
 WHERE expires_at < @timestamp;
+
+-- name: DeleteExpiredPastesReturningIDs :many
+DELETE
+FROM paste
+WHERE expires_at < @timestamp
+RETURNING id;
