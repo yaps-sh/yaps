@@ -13,6 +13,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/yaps-sh/yaps/internal/build"
 	"github.com/yaps-sh/yaps/internal/config"
+	"github.com/yaps-sh/yaps/internal/ogimage"
 	"github.com/yaps-sh/yaps/internal/paste"
 )
 
@@ -22,6 +23,7 @@ type Handler struct {
 	cfg           *config.Config
 	buildInfo     build.Info
 	latestVersion string
+	ogCache       *ogimage.Cache
 }
 
 type CreatePasteRequest struct {
@@ -48,22 +50,23 @@ type ErrorResponse struct {
 	RetryAfter int64  `json:"retry_after,omitempty"`
 }
 
-func NewHandler(pasteSvc *paste.Paste, cfg *config.Config, bld build.Info, latestVersion string) *Handler {
+func NewHandler(pasteSvc *paste.Paste, cfg *config.Config, bld build.Info, latestVersion string, ogCache *ogimage.Cache) *Handler {
 	return &Handler{
 		pasteSvc:      pasteSvc,
 		validatorSvc:  newValidator(int64(cfg.Paste.Defaults.Anonymous.MaxSize)),
 		cfg:           cfg,
 		buildInfo:     bld,
 		latestVersion: latestVersion,
+		ogCache:       ogCache,
 	}
 }
 
 func (h *Handler) Index(w http.ResponseWriter, r *http.Request) {
-	renderIndex(w, r)
+	renderIndex(w, r, h.cfg.HTTP.BaseURL)
 }
 
 func (h *Handler) About(w http.ResponseWriter, r *http.Request) {
-	renderAbout(w, r, h.buildInfo, h.latestVersion)
+	renderAbout(w, r, h.buildInfo, h.latestVersion, h.cfg.HTTP.BaseURL)
 }
 
 func (h *Handler) Version(w http.ResponseWriter, r *http.Request) {
@@ -208,12 +211,12 @@ func (h *Handler) GetPaste(w http.ResponseWriter, r *http.Request) {
 	case "preview":
 		// TODO: this needs to be the preview system
 		h.pasteSvc.IncrementViewCount(id)
-		renderView(w, r, entry, extension)
+		renderView(w, r, entry, extension, h.cfg.HTTP.BaseURL)
 		return
 
 	case "":
 		h.pasteSvc.IncrementViewCount(id)
-		renderView(w, r, entry, extension)
+		renderView(w, r, entry, extension, h.cfg.HTTP.BaseURL)
 		return
 
 	default:
@@ -240,4 +243,21 @@ func (h *Handler) RobotsTXT(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=3600")
 	_, _ = w.Write([]byte("User-agent: *\nAllow: /$\nDisallow: /\n"))
+}
+
+func (h *Handler) OGImage(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	entry, err := h.pasteSvc.GetForPreview(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.NotFound(w, r)
+			return
+		}
+		slog.ErrorContext(r.Context(), "ogimage: fetch paste", "id", id, "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	h.ogCache.Serve(w, r, entry)
 }

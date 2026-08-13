@@ -19,6 +19,7 @@ import (
 	"github.com/yaps-sh/yaps/internal/build"
 	"github.com/yaps-sh/yaps/internal/config"
 	"github.com/yaps-sh/yaps/internal/database"
+	"github.com/yaps-sh/yaps/internal/ogimage"
 	"github.com/yaps-sh/yaps/internal/paste"
 	"github.com/yaps-sh/yaps/internal/web"
 )
@@ -106,9 +107,19 @@ func run() error {
 	}
 	defer closeWithTimeout("database", db.Close)
 
+	ogCache, err := ogimage.NewCache("data/ogimages")
+	if err != nil {
+		return fmt.Errorf("create og image cache: %w", err)
+	}
+
 	pasteSvc := paste.New(db)
+	pasteSvc.SetDeleteHook(func(id string) {
+		if err := ogCache.Delete(id); err != nil {
+			slog.Warn("ogimage: cache delete failed", "id", id, "err", err)
+		}
+	})
 	go pasteSvc.StartReaper(ctx, 0)
-	webHandler := web.NewHandler(pasteSvc, cfg, bld, latestVersion)
+	webHandler := web.NewHandler(pasteSvc, cfg, bld, latestVersion, ogCache)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
@@ -146,6 +157,7 @@ func run() error {
 		},
 	)
 
+	r.Get("/{id:[a-zA-Z0-9]+}/og.png", webHandler.OGImage)
 	r.Get("/{id:[a-zA-Z0-9]+}", webHandler.GetPaste)
 	r.Get("/{id:[a-zA-Z0-9]+}.{ext}", webHandler.GetPaste)
 

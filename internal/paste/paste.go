@@ -18,7 +18,8 @@ const (
 )
 
 type Paste struct {
-	db *database.Database
+	db       *database.Database
+	onDelete func(id string)
 }
 
 type Entry struct {
@@ -46,6 +47,23 @@ func New(db *database.Database) *Paste {
 	return &Paste{
 		db: db,
 	}
+}
+
+func (p *Paste) SetDeleteHook(fn func(id string)) {
+	p.onDelete = fn
+}
+
+func (p *Paste) GetForPreview(ctx context.Context, id string) (*Entry, error) {
+	row, err := p.db.ReadQueries.GetPaste(
+		ctx, sqlc.GetPasteParams{
+			ID:  id,
+			Now: time.Now().UTC().Format(time.RFC3339),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return fromRow(row)
 }
 
 func (p *Paste) Create(ctx context.Context, params CreateParams) (*Entry, error) {
@@ -184,11 +202,17 @@ func (p *Paste) sweepExpired(ctx context.Context) {
 	defer cancel()
 
 	now := time.Now().UTC().Format(time.RFC3339)
-	if err := p.db.WriteQueries.DeleteExpiredPastes(sweepCtx, now); err != nil {
+	ids, err := p.db.WriteQueries.DeleteExpiredPastesReturningIDs(sweepCtx, now)
+	if err != nil {
 		slog.WarnContext(sweepCtx, "failed to delete expired pastes", "err", err)
 		return
 	}
-	slog.DebugContext(sweepCtx, "expired paste sweep completed")
+	if p.onDelete != nil {
+		for _, id := range ids {
+			p.onDelete(id)
+		}
+	}
+	slog.DebugContext(sweepCtx, "expired paste sweep completed", "count", len(ids))
 }
 
 func fromRow(row sqlc.Paste) (*Entry, error) {

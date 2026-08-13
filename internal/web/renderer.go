@@ -11,9 +11,9 @@ import (
 	"github.com/yaps-sh/yaps/internal/web/templates"
 )
 
-func renderIndex(w http.ResponseWriter, r *http.Request) {
+func renderIndex(w http.ResponseWriter, r *http.Request, baseURL string) {
 	var buf bytes.Buffer
-	if err := templates.Index().Render(r.Context(), &buf); err != nil {
+	if err := templates.Index(baseURL).Render(r.Context(), &buf); err != nil {
 		slog.ErrorContext(r.Context(), "failed to render index", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -24,9 +24,9 @@ func renderIndex(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(buf.Bytes())
 }
 
-func renderAbout(w http.ResponseWriter, r *http.Request, bld build.Info, latest string) {
+func renderAbout(w http.ResponseWriter, r *http.Request, bld build.Info, latest string, baseURL string) {
 	var buf bytes.Buffer
-	if err := templates.About(bld, latest).Render(r.Context(), &buf); err != nil {
+	if err := templates.About(bld, latest, baseURL).Render(r.Context(), &buf); err != nil {
 		slog.ErrorContext(r.Context(), "failed to render about", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
@@ -78,7 +78,7 @@ func renderHighlightCSS(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(css))
 }
 
-func renderView(w http.ResponseWriter, r *http.Request, entry *paste.Entry, ext string) {
+func renderView(w http.ResponseWriter, r *http.Request, entry *paste.Entry, ext string, baseURL string) {
 	highlighted, err := highlight(entry.DetectedLanguage, ext, entry.Content)
 	if err != nil {
 		slog.ErrorContext(r.Context(), "failed to highlight", "err", err)
@@ -87,7 +87,7 @@ func renderView(w http.ResponseWriter, r *http.Request, entry *paste.Entry, ext 
 	}
 
 	var buf bytes.Buffer
-	if err := templates.View(entry, highlighted).Render(r.Context(), &buf); err != nil {
+	if err := templates.View(entry, highlighted, baseURL).Render(r.Context(), &buf); err != nil {
 		slog.ErrorContext(r.Context(), "failed to render view", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
