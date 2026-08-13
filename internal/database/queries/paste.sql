@@ -15,11 +15,6 @@ WHERE id = @id;
 -- name: DeletePasteByID :exec
 DELETE FROM paste WHERE id = @id;
 
--- name: DeleteExpiredPastes :exec
-DELETE
-FROM paste
-WHERE expires_at < @timestamp;
-
 -- name: DeleteExpiredPastesReturningIDs :many
 DELETE
 FROM paste
