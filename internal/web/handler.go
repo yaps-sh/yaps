@@ -208,13 +208,8 @@ func (h *Handler) GetPaste(w http.ResponseWriter, r *http.Request) {
 		writeRaw(w, entry.Content)
 		return
 
-	case "preview":
-		// TODO: this needs to be the preview system
-		h.pasteSvc.IncrementViewCount(id)
-		renderView(w, r, entry, extension, h.cfg.HTTP.BaseURL)
-		return
-
-	case "":
+	// TODO: preview system not yet implemented
+	case "", "preview":
 		h.pasteSvc.IncrementViewCount(id)
 		renderView(w, r, entry, extension, h.cfg.HTTP.BaseURL)
 		return
