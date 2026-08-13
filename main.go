@@ -79,10 +79,12 @@ func run() error {
 	webHandler := web.NewHandler(pasteSvc, cfg)
 
 	r := chi.NewRouter()
+
+	if cfg.HTTP.ClientIPHeader != nil && *cfg.HTTP.ClientIPHeader != "" {
+		r.Use(middleware.ClientIPFromHeader(*cfg.HTTP.ClientIPHeader))
+	}
+
 	r.Use(middleware.Logger)
-	// TODO: configurable?
-	// ClientIPFromRemoteAddr for default option
-	// r.Use(middleware.ClientIPFromHeader("CF-Connecting-IP"))
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.StripSlashes)
