@@ -1,6 +1,8 @@
 package templates
 
-templ about() {
+import "github.com/yaps-sh/yaps/internal/build"
+
+templ about(bld build.Info, latest string) {
 	<style>
     .about-wrap {
         flex: 1;
@@ -131,6 +133,28 @@ templ about() {
 			<p>
 				Based on the work of John Crepezzi with Hastebin. Much love.
 			</p>
+			<h2>Version</h2>
+			<p>
+				<code>{ bld.Version }</code>
+				if bld.Commit != "" && bld.Commit != "none" {
+					(<code>{ shortCommit(bld.Commit) }</code>)
+				}
+				if bld.Date != "" && bld.Date != "unknown" {
+					, built <code>{ bld.Date }</code>
+				}
+			</p>
+			if latest != "" && latest != bld.Version {
+				<p>
+					Latest release: <a href="https://github.com/yaps-sh/yaps/releases/latest" target="_blank" rel="noopener noreferrer"><code>{ latest }</code></a>
+				</p>
+			}
 		</div>
 	</div>
+}
+
+func shortCommit(c string) string {
+	if len(c) > 7 {
+		return c[:7]
+	}
+	return c
 }

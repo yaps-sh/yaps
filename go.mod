@@ -10,6 +10,7 @@ require (
 	github.com/go-playground/validator/v10 v10.30.3
 	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/pressly/goose/v3 v3.27.3
+	golang.org/x/mod v0.38.0
 	modernc.org/sqlite v1.56.0
 )
 

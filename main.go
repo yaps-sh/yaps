@@ -14,19 +14,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/yaps-sh/yaps/internal/build"
 	"github.com/yaps-sh/yaps/internal/config"
 	"github.com/yaps-sh/yaps/internal/database"
 	"github.com/yaps-sh/yaps/internal/paste"
 	"github.com/yaps-sh/yaps/internal/web"
 )
 
-var (
-	version = "dev"
-	commit  = "none"
-	date    = "unknown"
-)
-
 const shutdownTimeout = 10 * time.Second
+
+const githubOwner = "yaps-sh"
+const githubRepo = "yaps"
 
 func main() {
 	if err := run(); err != nil {
@@ -54,8 +52,17 @@ func run() error {
 		),
 	)
 
-	slog.Debug(
-		"Loaded config",
+	bld := build.Current()
+
+	slog.Info(
+		"starting yaps",
+		"version", bld.Version,
+		"commit", bld.Commit,
+		"date", bld.Date,
+	)
+
+	slog.Info(
+		"config",
 		"database.path", cfg.Database.Path,
 		"http.base_url", cfg.HTTP.BaseURL,
 		"paste.id_length", cfg.Paste.IDLength,
@@ -68,6 +75,29 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	var latestVersion string
+	if !build.IsDev() {
+		checkCtx, cancel := context.WithTimeout(ctx, 8*time.Second)
+		latest, outdated, err := build.CheckLatest(checkCtx, http.DefaultClient, githubOwner, githubRepo, bld)
+		cancel()
+		if err != nil {
+			return fmt.Errorf("version check failed: %w", err)
+		}
+		latestVersion = latest
+		if outdated {
+			slog.Warn(
+				"newer version available",
+				"current", bld.Version,
+				"latest", latest,
+				"url", "https://github.com/"+githubOwner+"/"+githubRepo+"/releases/latest",
+			)
+		} else {
+			slog.Info("version check ok", "version", bld.Version, "latest", latest)
+		}
+	} else {
+		slog.Info("dev build, skipping version check")
+	}
+
 	db, err := database.New(ctx, cfg.Database)
 	if err != nil {
 		return fmt.Errorf("create database: %w", err)
@@ -76,7 +106,7 @@ func run() error {
 
 	pasteSvc := paste.New(db)
 	go pasteSvc.StartReaper(ctx, 0)
-	webHandler := web.NewHandler(pasteSvc, cfg)
+	webHandler := web.NewHandler(pasteSvc, cfg, bld, latestVersion)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
@@ -98,6 +128,7 @@ func run() error {
 	r.Route(
 		"/api/v1", func(r chi.Router) {
 			r.Post("/paste", webHandler.CreatePaste)
+			r.Get("/version", webHandler.Version)
 		},
 	)
 

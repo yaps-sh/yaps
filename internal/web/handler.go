@@ -11,14 +11,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
+	"github.com/yaps-sh/yaps/internal/build"
 	"github.com/yaps-sh/yaps/internal/config"
 	"github.com/yaps-sh/yaps/internal/paste"
 )
 
 type Handler struct {
-	pasteSvc     *paste.Paste
-	validatorSvc *validator.Validate
-	cfg          *config.Config
+	pasteSvc      *paste.Paste
+	validatorSvc  *validator.Validate
+	cfg           *config.Config
+	buildInfo     build.Info
+	latestVersion string
 }
 
 type CreatePasteRequest struct {
@@ -44,11 +47,13 @@ type ErrorResponse struct {
 	RetryAfter int64  `json:"retry_after,omitempty"`
 }
 
-func NewHandler(pasteSvc *paste.Paste, cfg *config.Config) *Handler {
+func NewHandler(pasteSvc *paste.Paste, cfg *config.Config, bld build.Info, latestVersion string) *Handler {
 	return &Handler{
-		pasteSvc:     pasteSvc,
-		validatorSvc: newValidator(int64(cfg.Paste.Defaults.Anonymous.MaxSize)),
-		cfg:          cfg,
+		pasteSvc:      pasteSvc,
+		validatorSvc:  newValidator(int64(cfg.Paste.Defaults.Anonymous.MaxSize)),
+		cfg:           cfg,
+		buildInfo:     bld,
+		latestVersion: latestVersion,
 	}
 }
 
@@ -57,7 +62,16 @@ func (h *Handler) Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) About(w http.ResponseWriter, r *http.Request) {
-	renderAbout(w, r)
+	renderAbout(w, r, h.buildInfo, h.latestVersion)
+}
+
+func (h *Handler) Version(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]string{
+		"version":      h.buildInfo.Version,
+		"commit":       h.buildInfo.Commit,
+		"date":         h.buildInfo.Date,
+		"latest_known": h.latestVersion,
+	})
 }
 
 func (h *Handler) HighlightCSS(w http.ResponseWriter, r *http.Request) {

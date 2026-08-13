@@ -2,6 +2,7 @@ package templates
 
 import (
 	"fmt"
+	"github.com/yaps-sh/yaps/internal/build"
 	"github.com/yaps-sh/yaps/internal/paste"
 )
 
@@ -11,9 +12,9 @@ templ Index() {
 	}
 }
 
-templ About() {
+templ About(bld build.Info, latest string) {
 	@layout("yaps.sh - about") {
-		@about()
+		@about(bld, latest)
 	}
 }
 
