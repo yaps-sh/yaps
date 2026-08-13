@@ -35,10 +35,6 @@ func IsDev() bool {
 	return !semver.IsValid(semverPrefix(version))
 }
 
-func (i Info) String() string {
-	return fmt.Sprintf("version=%s commit=%s date=%s", i.Version, i.Commit, i.Date)
-}
-
 func CheckLatest(ctx context.Context, client *http.Client, owner, repo string, current Info) (string, bool, error) {
 	if client == nil {
 		client = http.DefaultClient
