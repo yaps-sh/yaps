@@ -81,7 +81,8 @@ templ view(entry *paste.Entry, hightlighted string) {
 			opacity: 0.85;
 		}
 
-		.copy-link {
+		.copy-link,
+		.wrap-toggle {
 			appearance: none;
 			background: none;
 			border: none;
@@ -113,6 +114,16 @@ templ view(entry *paste.Entry, hightlighted string) {
             overflow-x: auto;
             tab-size: 4;
         }
+
+        .view-content-wrap .chroma .ln {
+            position: sticky;
+            left: 0;
+        }
+
+        .view-content-wrap .chroma.wrap .cl {
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
 	</style>
 	<div class="view-content-wrap">
 		@templ.Raw(hightlighted)
@@ -135,6 +146,7 @@ templ view(entry *paste.Entry, hightlighted string) {
 		</div>
 		<div class="bottom-bar-right">
 			<button type="button" class="action-link copy-link" onclick="copyPasteContent(this)">Copy</button>
+			<button type="button" class="action-link wrap-toggle" aria-pressed="false" onclick="toggleWrap(this)">Wrap</button>
 			<a href={ templ.URL("?view=raw") } class="action-link">Raw</a>
 			<a href="/" class="action-link primary">New Paste</a>
 		</div>
@@ -153,5 +165,25 @@ templ view(entry *paste.Entry, hightlighted string) {
                 }, 1500);
             });
         }
+
+        function toggleWrap(btn) {
+            const chroma = document.querySelector('.chroma');
+            if (!chroma) return;
+            const wrapped = chroma.classList.toggle('wrap');
+            btn.setAttribute('aria-pressed', String(wrapped));
+            try { localStorage.setItem('yaps.wrap', wrapped ? '1' : '0'); } catch (_) {}
+        }
+
+        (function initWrap() {
+            const chroma = document.querySelector('.chroma');
+            const btn = document.querySelector('.wrap-toggle');
+            if (!chroma || !btn) return;
+            let wrapped = false;
+            try { wrapped = localStorage.getItem('yaps.wrap') === '1'; } catch (_) {}
+            if (wrapped) {
+                chroma.classList.add('wrap');
+                btn.setAttribute('aria-pressed', 'true');
+            }
+        })();
 	</script>
 }
