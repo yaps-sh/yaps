@@ -29,7 +29,8 @@ type DatabaseConfig struct {
 }
 
 type HTTPConfig struct {
-	BaseURL string `toml:"base_url"`
+	BaseURL        string  `toml:"base_url"`
+	ClientIPHeader *string `toml:"client_ip_header"`
 }
 
 type PasteConfig struct {
@@ -53,7 +54,8 @@ func defaults() *Config {
 			Path: "data/yaps.db",
 		},
 		HTTP: HTTPConfig{
-			BaseURL: "http://localhost:3000",
+			BaseURL:        "http://localhost:3000",
+			ClientIPHeader: nil,
 		},
 		Log: LogConfig{
 			Level: "info",

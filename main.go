@@ -79,11 +79,13 @@ func run() error {
 	webHandler := web.NewHandler(pasteSvc, cfg)
 
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	// TODO: configurable?
-	// ClientIPFromRemoteAddr for default option
-	// r.Use(middleware.ClientIPFromHeader("CF-Connecting-IP"))
 	r.Use(middleware.Recoverer)
+
+	if cfg.HTTP.ClientIPHeader != nil && *cfg.HTTP.ClientIPHeader != "" {
+		r.Use(middleware.ClientIPFromHeader(*cfg.HTTP.ClientIPHeader))
+	}
+
+	r.Use(middleware.Logger)
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.StripSlashes)
 	// TODO add ratelimiting middleware, make it configurable. should also only apply to the create paste endpoint
