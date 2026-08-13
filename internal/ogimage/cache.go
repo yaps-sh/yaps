@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
+	"github.com/yaps-sh/yaps/internal/httpheaders"
 	"github.com/yaps-sh/yaps/internal/paste"
 	"golang.org/x/sync/singleflight"
 )
@@ -174,7 +174,7 @@ func (c *Cache) Serve(w http.ResponseWriter, r *http.Request, entry *paste.Entry
 		w.Header().Set("Cache-Control", "public, max-age=86400, must-revalidate")
 	}
 	w.Header().Set("ETag", etag)
-	if etagMatches(r.Header.Values("If-None-Match"), etag) {
+	if httpheaders.ETagMatches(r.Header.Values("If-None-Match"), etag) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
@@ -184,26 +184,4 @@ func (c *Cache) Serve(w http.ResponseWriter, r *http.Request, entry *paste.Entry
 func etagFor(b []byte) string {
 	sum := sha256.Sum256(b)
 	return fmt.Sprintf("\"%x\"", hex.EncodeToString(sum[:8]))
-}
-
-func etagMatches(values []string, etag string) bool {
-	want := strings.Trim(etag, "\"")
-	for _, v := range values {
-		for _, tag := range strings.Split(v, ",") {
-			tag = strings.TrimSpace(tag)
-			if tag == "" {
-				continue
-			}
-			if tag == "*" {
-				return true
-			}
-			t := strings.TrimPrefix(tag, "W/")
-			t = strings.TrimPrefix(t, "w/")
-			t = strings.Trim(t, "\"")
-			if t == want {
-				return true
-			}
-		}
-	}
-	return false
 }

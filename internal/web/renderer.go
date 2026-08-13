@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/a-h/templ"
 	"github.com/yaps-sh/yaps/internal/build"
+	"github.com/yaps-sh/yaps/internal/httpheaders"
 	"github.com/yaps-sh/yaps/internal/paste"
 	"github.com/yaps-sh/yaps/internal/web/templates"
 )
@@ -33,28 +33,6 @@ func renderAbout(w http.ResponseWriter, r *http.Request, bld build.Info, latest 
 	writeTempl(w, r, templates.About(bld, latest, baseURL), "about")
 }
 
-func etagMatches(values []string, etag string) bool {
-	want := strings.Trim(etag, "\"")
-	for _, v := range values {
-		for _, tag := range strings.Split(v, ",") {
-			tag = strings.TrimSpace(tag)
-			if tag == "" {
-				continue
-			}
-			if tag == "*" {
-				return true
-			}
-			t := strings.TrimPrefix(tag, "W/")
-			t = strings.TrimPrefix(t, "w/")
-			t = strings.Trim(t, "\"")
-			if t == want {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func renderHighlightCSS(w http.ResponseWriter, r *http.Request) {
 	css, err := highlightCSSCache()
 	if err != nil {
@@ -67,7 +45,7 @@ func renderHighlightCSS(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/css; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=86400")
 	w.Header().Set("ETag", etag)
-	if etagMatches(r.Header.Values("If-None-Match"), etag) {
+	if httpheaders.ETagMatches(r.Header.Values("If-None-Match"), etag) {
 		w.WriteHeader(http.StatusNotModified)
 		return
 	}
