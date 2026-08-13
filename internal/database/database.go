@@ -90,8 +90,13 @@ func buildDSN(path string) string {
 	v.Add("_pragma", "busy_timeout(5000)")
 	v.Add("_pragma", "synchronous(NORMAL)")
 	v.Add("_pragma", "foreign_keys(ON)")
+	v.Add("_txlock", "immediate")
 
 	return fmt.Sprintf("%s?%s", path, v.Encode())
+}
+
+func (db *Database) Writer() *sql.DB {
+	return db.write
 }
 
 func (db *Database) Close(ctx context.Context) error {

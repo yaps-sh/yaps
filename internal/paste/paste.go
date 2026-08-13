@@ -30,14 +30,16 @@ type Entry struct {
 	ViewCount        int64
 	ExpiresAt        time.Time
 	CreatedAt        time.Time
+	BurnAfterRead    bool
 }
 
 type CreateParams struct {
-	Content   string
-	Filename  *string
-	Language  *string
-	ExpiresIn time.Duration
-	IDLength  int
+	Content       string
+	Filename      *string
+	Language      *string
+	ExpiresIn     time.Duration
+	IDLength      int
+	BurnAfterRead bool
 }
 
 func New(db *database.Database) *Paste {
@@ -75,6 +77,7 @@ func (p *Paste) Create(ctx context.Context, params CreateParams) (*Entry, error)
 			SizeBytes:        sizeBytes,
 			ExpiresAt:        expiresAt.Format(time.RFC3339),
 			CreatedAt:        now.Format(time.RFC3339),
+			BurnAfterRead:    boolToInt(params.BurnAfterRead),
 		},
 	)
 	if err != nil {
@@ -90,19 +93,51 @@ func (p *Paste) Create(ctx context.Context, params CreateParams) (*Entry, error)
 		ExpiresAt:        expiresAt,
 		ViewCount:        0,
 		CreatedAt:        now,
+		BurnAfterRead:    params.BurnAfterRead,
 	}, nil
 }
 
 func (p *Paste) Get(ctx context.Context, id string) (*Entry, error) {
-	row, err := p.db.ReadQueries.GetPaste(
+	tx, err := p.db.Writer().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin tx: %w", err)
+	}
+
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
+	q := p.db.WriteQueries.WithTx(tx)
+
+	row, err := q.GetPaste(
 		ctx, sqlc.GetPasteParams{
 			ID:  id,
 			Now: time.Now().UTC().Format(time.RFC3339),
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get paste: %w", err)
+		return nil, err
 	}
+
+	if row.BurnAfterRead != 0 {
+		if row.ViewCount >= 1 {
+			if err := q.DeletePasteByID(ctx, row.ID); err != nil {
+				return nil, fmt.Errorf("failed to delete burn paste: %w", err)
+			}
+		} else {
+			if err := q.IncrementViewCount(ctx, row.ID); err != nil {
+				return nil, fmt.Errorf("failed to increment view count: %w", err)
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit tx: %w", err)
+	}
+	committed = true
 
 	e, err := fromRow(row)
 	if err != nil {
@@ -178,7 +213,15 @@ func fromRow(row sqlc.Paste) (*Entry, error) {
 		ViewCount:        row.ViewCount,
 		ExpiresAt:        expiresAt,
 		CreatedAt:        createdAt,
+		BurnAfterRead:    row.BurnAfterRead != 0,
 	}, nil
+}
+
+func boolToInt(b bool) int64 {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 func generateID(length int) (string, error) {

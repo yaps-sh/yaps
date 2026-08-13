@@ -25,10 +25,11 @@ type Handler struct {
 }
 
 type CreatePasteRequest struct {
-	Content   string  `json:"content" validate:"required,utf8,max_size"`
-	Filename  *string `json:"filename" validate:"omitempty"`
-	Language  *string `json:"language" validate:"omitempty"`
-	ExpiresIn *int64  `json:"expires_in" validate:"omitempty,gt=0"`
+	Content       string  `json:"content" validate:"required,utf8,max_size"`
+	Filename      *string `json:"filename" validate:"omitempty"`
+	Language      *string `json:"language" validate:"omitempty"`
+	ExpiresIn     *int64  `json:"expires_in" validate:"omitempty,gt=0"`
+	BurnAfterRead *bool   `json:"burn_after_read" validate:"omitempty"`
 }
 
 type CreatePasteResponse struct {
@@ -141,13 +142,16 @@ func (h *Handler) CreatePaste(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	burn := req.BurnAfterRead != nil && *req.BurnAfterRead
+
 	entry, err := h.pasteSvc.Create(
 		r.Context(), paste.CreateParams{
-			Content:   req.Content,
-			Filename:  req.Filename,
-			Language:  req.Language,
-			ExpiresIn: expiresIn,
-			IDLength:  h.cfg.Paste.IDLength,
+			Content:       req.Content,
+			Filename:      req.Filename,
+			Language:      req.Language,
+			ExpiresIn:     expiresIn,
+			IDLength:      h.cfg.Paste.IDLength,
+			BurnAfterRead: burn,
 		},
 	)
 
