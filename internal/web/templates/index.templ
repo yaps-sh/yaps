@@ -386,7 +386,7 @@ templ index(primary []string, all []string) {
 
             btn.addEventListener('click', createPaste);
 
-            textarea.addEventListener('keydown', function (e) {
+            document.addEventListener('keydown', function (e) {
                 if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                     e.preventDefault();
                     createPaste();
