@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/yaps-sh/yaps/compare/v0.4.0...v0.5.0) (2026-08-13)
+
+
+### Features
+
+* add build info and version checking functionality ([cfaf53d](https://github.com/yaps-sh/yaps/commit/cfaf53d2ee62f6000d50a42fae2c1b97cd16ab6b))
+* add burn after read ([adcceb0](https://github.com/yaps-sh/yaps/commit/adcceb004309609ba85f2b4eda4e1f538c4e31a8))
+
 ## [0.4.0](https://github.com/yaps-sh/yaps/compare/v0.3.0...v0.4.0) (2026-08-13)
 
 
