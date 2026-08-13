@@ -23,8 +23,8 @@ id_length = 10
 
 [paste.defaults.anonymous]
 expiry_length = "720h" # 30 days in hours
-max_size = "512KB"
+max_size = "50KB"
 
 [paste.defaults.authenticated]
 expiry_length = "8765h" # Roughly 1 year in hours
-max_size = "2MB"
+max_size = "150KB"
