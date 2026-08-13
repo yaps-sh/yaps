@@ -6,15 +6,16 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/a-h/templ"
 	"github.com/yaps-sh/yaps/internal/build"
 	"github.com/yaps-sh/yaps/internal/paste"
 	"github.com/yaps-sh/yaps/internal/web/templates"
 )
 
-func renderIndex(w http.ResponseWriter, r *http.Request, baseURL string) {
+func writeTempl(w http.ResponseWriter, r *http.Request, comp templ.Component, label string) {
 	var buf bytes.Buffer
-	if err := templates.Index(baseURL).Render(r.Context(), &buf); err != nil {
-		slog.ErrorContext(r.Context(), "failed to render index", "err", err)
+	if err := comp.Render(r.Context(), &buf); err != nil {
+		slog.ErrorContext(r.Context(), "failed to render "+label, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -24,17 +25,12 @@ func renderIndex(w http.ResponseWriter, r *http.Request, baseURL string) {
 	_, _ = w.Write(buf.Bytes())
 }
 
-func renderAbout(w http.ResponseWriter, r *http.Request, bld build.Info, latest string, baseURL string) {
-	var buf bytes.Buffer
-	if err := templates.About(bld, latest, baseURL).Render(r.Context(), &buf); err != nil {
-		slog.ErrorContext(r.Context(), "failed to render about", "err", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
+func renderIndex(w http.ResponseWriter, r *http.Request, baseURL string) {
+	writeTempl(w, r, templates.Index(baseURL), "index")
+}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	_, _ = w.Write(buf.Bytes())
+func renderAbout(w http.ResponseWriter, r *http.Request, bld build.Info, latest string, baseURL string) {
+	writeTempl(w, r, templates.About(bld, latest, baseURL), "about")
 }
 
 func etagMatches(values []string, etag string) bool {
@@ -86,14 +82,5 @@ func renderView(w http.ResponseWriter, r *http.Request, entry *paste.Entry, ext 
 		return
 	}
 
-	var buf bytes.Buffer
-	if err := templates.View(entry, highlighted, baseURL).Render(r.Context(), &buf); err != nil {
-		slog.ErrorContext(r.Context(), "failed to render view", "err", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	_, _ = w.Write(buf.Bytes())
+	writeTempl(w, r, templates.View(entry, highlighted, baseURL), "view")
 }
