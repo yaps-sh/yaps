@@ -44,10 +44,13 @@ func (c *Cache) Delete(id string) {
 	c.tombstones.Store(id, struct{}{})
 	mu := c.muFor(id)
 	mu.Lock()
-	defer mu.Unlock()
-	if err := os.Remove(c.path(id)); err != nil && !errors.Is(err, os.ErrNotExist) {
+	err := os.Remove(c.path(id))
+	mu.Unlock()
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		slog.Warn("ogimage: cache delete failed", "id", id, "err", err)
 	}
+
+	c.mu.Delete(id)
 }
 
 func (c *Cache) Get(entry *paste.Entry) ([]byte, error) {
@@ -75,6 +78,9 @@ func (c *Cache) Get(entry *paste.Entry) ([]byte, error) {
 			defer mu.Unlock()
 			if _, tombstoned := c.tombstones.Load(entry.ID); tombstoned {
 				slog.Debug("ogimage: paste tombstoned mid-flight, skipping cache write", "id", entry.ID)
+				
+				c.tombstones.Delete(entry.ID)
+				c.mu.Delete(entry.ID)
 				return b, nil
 			}
 			if werr := writeAtomic(p, b); werr != nil {
