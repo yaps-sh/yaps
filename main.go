@@ -113,7 +113,11 @@ func run() error {
 	}
 
 	pasteSvc := paste.New(db)
-	pasteSvc.SetDeleteHook(ogCache.Delete)
+	pasteSvc.SetDeleteHook(func(id string) {
+		if err := ogCache.Delete(id); err != nil {
+			slog.Warn("ogimage: cache delete failed", "id", id, "err", err)
+		}
+	})
 	go pasteSvc.StartReaper(ctx, 0)
 	webHandler := web.NewHandler(pasteSvc, cfg, bld, latestVersion, ogCache)
 

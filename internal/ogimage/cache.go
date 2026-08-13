@@ -17,40 +17,64 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
+var errTombstoned = errors.New("ogimage: paste tombstoned")
+
+type entryState struct {
+	mu   sync.Mutex
+	tomb bool
+	refs int
+}
+
 type Cache struct {
-	dir        string
-	sf         singleflight.Group
-	mu         sync.Map // id -> *sync.Mutex
-	tombstones sync.Map // id -> struct{}
+	dir string
+	sf  singleflight.Group
+	smu sync.Mutex
+	ids map[string]*entryState
 }
 
 func NewCache(dir string) (*Cache, error) {
 	if err := os.MkdirAll(dir, 0o750); err != nil {
 		return nil, fmt.Errorf("ogimage: create cache dir: %w", err)
 	}
-	return &Cache{dir: dir}, nil
+	return &Cache{dir: dir, ids: make(map[string]*entryState)}, nil
 }
 
 func (c *Cache) path(id string) string {
 	return filepath.Join(c.dir, id+".png")
 }
 
-func (c *Cache) muFor(id string) *sync.Mutex {
-	v, _ := c.mu.LoadOrStore(id, &sync.Mutex{})
-	return v.(*sync.Mutex)
+func (c *Cache) acquire(id string) *entryState {
+	c.smu.Lock()
+	defer c.smu.Unlock()
+	s, ok := c.ids[id]
+	if !ok {
+		s = &entryState{}
+		c.ids[id] = s
+	}
+	s.refs++
+	return s
 }
 
-func (c *Cache) Delete(id string) {
-	c.tombstones.Store(id, struct{}{})
-	mu := c.muFor(id)
-	mu.Lock()
-	err := os.Remove(c.path(id))
-	mu.Unlock()
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		slog.Warn("ogimage: cache delete failed", "id", id, "err", err)
+func (c *Cache) release(s *entryState, id string) {
+	c.smu.Lock()
+	defer c.smu.Unlock()
+	s.refs--
+	if s.refs == 0 {
+		delete(c.ids, id)
 	}
+}
 
-	c.mu.Delete(id)
+func (c *Cache) Delete(id string) error {
+	s := c.acquire(id)
+	s.mu.Lock()
+	s.tomb = true
+	err := os.Remove(c.path(id))
+	s.mu.Unlock()
+	c.release(s, id)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("ogimage: delete cache %q: %w", id, err)
+	}
+	return nil
 }
 
 func (c *Cache) Get(entry *paste.Entry) ([]byte, error) {
@@ -69,19 +93,25 @@ func (c *Cache) Get(entry *paste.Entry) ([]byte, error) {
 				return b, nil
 			}
 			slog.Debug("ogimage: generating", "id", entry.ID)
+			s := c.acquire(entry.ID)
+			released := false
+			release := func() {
+				if !released {
+					c.release(s, entry.ID)
+					released = true
+				}
+			}
+			defer release()
+
 			b, err := Generate(entry)
 			if err != nil {
 				return nil, err
 			}
-			mu := c.muFor(entry.ID)
-			mu.Lock()
-			defer mu.Unlock()
-			if _, tombstoned := c.tombstones.Load(entry.ID); tombstoned {
+			s.mu.Lock()
+			defer s.mu.Unlock()
+			if s.tomb {
 				slog.Debug("ogimage: paste tombstoned mid-flight, skipping cache write", "id", entry.ID)
-				
-				c.tombstones.Delete(entry.ID)
-				c.mu.Delete(entry.ID)
-				return b, nil
+				return nil, errTombstoned
 			}
 			if werr := writeAtomic(p, b); werr != nil {
 				slog.Warn("ogimage: cache write failed", "id", entry.ID, "err", werr)
@@ -124,6 +154,10 @@ func (c *Cache) Serve(w http.ResponseWriter, r *http.Request, entry *paste.Entry
 	}
 	b, err := c.Get(entry)
 	if err != nil {
+		if errors.Is(err, errTombstoned) {
+			http.NotFound(w, r)
+			return
+		}
 		slog.ErrorContext(r.Context(), "ogimage: generate failed", "id", entry.ID, "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
