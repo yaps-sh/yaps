@@ -1,7 +1,9 @@
 package web
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +15,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/yaps-sh/yaps/internal/build"
 	"github.com/yaps-sh/yaps/internal/config"
+	"github.com/yaps-sh/yaps/internal/httpheaders"
 	"github.com/yaps-sh/yaps/internal/ogimage"
 	"github.com/yaps-sh/yaps/internal/paste"
 )
@@ -50,7 +53,9 @@ type ErrorResponse struct {
 	RetryAfter int64  `json:"retry_after,omitempty"`
 }
 
-func NewHandler(pasteSvc *paste.Paste, cfg *config.Config, bld build.Info, latestVersion string, ogCache *ogimage.Cache) *Handler {
+func NewHandler(
+	pasteSvc *paste.Paste, cfg *config.Config, bld build.Info, latestVersion string, ogCache *ogimage.Cache,
+) *Handler {
 	return &Handler{
 		pasteSvc:      pasteSvc,
 		validatorSvc:  newValidator(int64(cfg.Paste.Defaults.Anonymous.MaxSize)),
@@ -70,12 +75,14 @@ func (h *Handler) About(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Version(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{
-		"version":      h.buildInfo.Version,
-		"commit":       h.buildInfo.Commit,
-		"date":         h.buildInfo.Date,
-		"latest_known": h.latestVersion,
-	})
+	writeJSON(
+		w, http.StatusOK, map[string]string{
+			"version":      h.buildInfo.Version,
+			"commit":       h.buildInfo.Commit,
+			"date":         h.buildInfo.Date,
+			"latest_known": h.latestVersion,
+		},
+	)
 }
 
 func (h *Handler) HighlightCSS(w http.ResponseWriter, r *http.Request) {
@@ -205,11 +212,12 @@ func (h *Handler) GetPaste(w http.ResponseWriter, r *http.Request) {
 
 	switch viewMode {
 	case "raw":
-		writeRaw(w, entry.Content)
+		writeRaw(w, r, entry)
 		return
 
 	// TODO: preview system not yet implemented
 	case "", "preview":
+		w.Header().Set("Cache-Control", "no-store")
 		h.pasteSvc.IncrementViewCount(id)
 		renderView(w, r, entry, extension, h.cfg.HTTP.BaseURL)
 		return
@@ -221,11 +229,45 @@ func (h *Handler) GetPaste(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func writeRaw(w http.ResponseWriter, content string) {
+func writeRaw(w http.ResponseWriter, r *http.Request, entry *paste.Entry) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+
+	if entry.BurnAfterRead {
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(entry.Content))
+		return
+	}
+
+	ttl := time.Until(entry.ExpiresAt)
+	if ttl <= 0 {
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(entry.Content))
+		return
+	}
+
+	maxAge := int(ttl.Seconds())
+	if maxAge > 86400 {
+		maxAge = 86400
+	}
+	w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d, must-revalidate", maxAge))
+
+	etag := rawETag([]byte(entry.Content))
+	w.Header().Set("ETag", etag)
+	if httpheaders.ETagMatches(r.Header.Values("If-None-Match"), etag) {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(content))
+	_, _ = w.Write([]byte(entry.Content))
+}
+
+func rawETag(b []byte) string {
+	sum := sha256.Sum256(b)
+	return fmt.Sprintf("%q", hex.EncodeToString(sum[:8]))
 }
 
 func writeJSON(w http.ResponseWriter, status int, body any) {
