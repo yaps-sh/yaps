@@ -117,18 +117,10 @@ func (p *Paste) IncrementViewCount(id string) {
 		incCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		if incErr := p.incrementViewCount(incCtx, id); incErr != nil {
-			slog.WarnContext(incCtx, "failed to increment view count", "id", id, "err", incErr)
+		if err := p.db.WriteQueries.IncrementViewCount(incCtx, id); err != nil {
+			slog.WarnContext(incCtx, "failed to increment view count", "id", id, "err", err)
 		}
 	}()
-}
-
-func (p *Paste) incrementViewCount(ctx context.Context, id string) error {
-	if err := p.db.WriteQueries.IncrementViewCount(ctx, id); err != nil {
-		return fmt.Errorf("failed to increment view count: %w", err)
-	}
-
-	return nil
 }
 
 func (p *Paste) StartReaper(ctx context.Context, interval time.Duration) {
