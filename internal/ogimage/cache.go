@@ -10,14 +10,18 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/yaps-sh/yaps/internal/paste"
 	"golang.org/x/sync/singleflight"
 )
 
 type Cache struct {
-	dir string
-	sf  singleflight.Group
+	dir        string
+	sf         singleflight.Group
+	mu         sync.Map // id -> *sync.Mutex
+	tombstones sync.Map // id -> struct{}
 }
 
 func NewCache(dir string) (*Cache, error) {
@@ -31,8 +35,19 @@ func (c *Cache) path(id string) string {
 	return filepath.Join(c.dir, id+".png")
 }
 
+func (c *Cache) muFor(id string) *sync.Mutex {
+	v, _ := c.mu.LoadOrStore(id, &sync.Mutex{})
+	return v.(*sync.Mutex)
+}
+
 func (c *Cache) Delete(id string) {
-	_ = os.Remove(c.path(id))
+	c.tombstones.Store(id, struct{}{})
+	mu := c.muFor(id)
+	mu.Lock()
+	defer mu.Unlock()
+	if err := os.Remove(c.path(id)); err != nil && !errors.Is(err, os.ErrNotExist) {
+		slog.Warn("ogimage: cache delete failed", "id", id, "err", err)
+	}
 }
 
 func (c *Cache) Get(entry *paste.Entry) ([]byte, error) {
@@ -55,7 +70,14 @@ func (c *Cache) Get(entry *paste.Entry) ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			if werr := os.WriteFile(p, b, 0o640); werr != nil {
+			mu := c.muFor(entry.ID)
+			mu.Lock()
+			defer mu.Unlock()
+			if _, tombstoned := c.tombstones.Load(entry.ID); tombstoned {
+				slog.Debug("ogimage: paste tombstoned mid-flight, skipping cache write", "id", entry.ID)
+				return b, nil
+			}
+			if werr := writeAtomic(p, b); werr != nil {
 				slog.Warn("ogimage: cache write failed", "id", entry.ID, "err", werr)
 			}
 			return b, nil
@@ -65,6 +87,28 @@ func (c *Cache) Get(entry *paste.Entry) ([]byte, error) {
 		return nil, err
 	}
 	return v.([]byte), nil
+}
+
+func writeAtomic(p string, b []byte) error {
+	tmp, err := os.CreateTemp(filepath.Dir(p), ".og-*.png.tmp")
+	if err != nil {
+		return fmt.Errorf("tempfile: %w", err)
+	}
+	tmpName := tmp.Name()
+	if _, werr := tmp.Write(b); werr != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("write: %w", werr)
+	}
+	if cerr := tmp.Close(); cerr != nil {
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("close: %w", cerr)
+	}
+	if rerr := os.Rename(tmpName, p); rerr != nil {
+		_ = os.Remove(tmpName)
+		return fmt.Errorf("rename: %w", rerr)
+	}
+	return nil
 }
 
 func (c *Cache) Serve(w http.ResponseWriter, r *http.Request, entry *paste.Entry) {
@@ -80,7 +124,15 @@ func (c *Cache) Serve(w http.ResponseWriter, r *http.Request, entry *paste.Entry
 	}
 	etag := etagFor(b)
 	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Cache-Control", "public, max-age=86400")
+	ttl := time.Until(entry.ExpiresAt)
+	switch {
+	case ttl <= 0:
+		w.Header().Set("Cache-Control", "no-store")
+	case ttl.Seconds() <= 86400:
+		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d, must-revalidate", int(ttl.Seconds())))
+	default:
+		w.Header().Set("Cache-Control", "public, max-age=86400, must-revalidate")
+	}
 	w.Header().Set("ETag", etag)
 	if etagMatches(r.Header.Values("If-None-Match"), etag) {
 		w.WriteHeader(http.StatusNotModified)

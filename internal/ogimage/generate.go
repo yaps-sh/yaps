@@ -31,7 +31,7 @@ const (
 	topBarH        = 56
 	accentH        = 2
 	maxLines       = 16
-	maxLineRunes   = 92
+	codeAreaPx     = imgWidth - 2*codePadX
 )
 
 var (
@@ -43,29 +43,33 @@ var (
 	colFgFaint  = color.RGBA{R: 0x56, G: 0x5a, B: 0x61, A: 0xff}
 )
 
-var regularFace font.Face
+var regularFont *opentype.Font
 
 func init() {
 	slog.Debug("ogimage: loaded IBM Plex Mono Regular", "size_bytes", len(plexTTF))
-
-	ttf, err := opentype.Parse(plexTTF)
+	f, err := opentype.Parse(plexTTF)
 	if err != nil {
 		panic(fmt.Sprintf("ogimage: parse IBM Plex Mono: %v", err))
 	}
-	face, err := opentype.NewFace(
-		ttf, &opentype.FaceOptions{
+	regularFont = f
+}
+
+func newFace() (font.Face, error) {
+	return opentype.NewFace(
+		regularFont, &opentype.FaceOptions{
 			Size:    fontSize,
 			DPI:     72,
 			Hinting: font.HintingFull,
 		},
 	)
-	if err != nil {
-		panic(fmt.Sprintf("ogimage: new face: %v", err))
-	}
-	regularFace = face
 }
 
 func Generate(entry *paste.Entry) ([]byte, error) {
+	face, err := newFace()
+	if err != nil {
+		return nil, fmt.Errorf("ogimage: new face: %w", err)
+	}
+
 	img := image.NewRGBA(image.Rect(0, 0, imgWidth, imgHeight))
 	draw.Draw(img, img.Bounds(), image.NewUniform(colBg), image.Point{}, draw.Src)
 
@@ -78,30 +82,31 @@ func Generate(entry *paste.Entry) ([]byte, error) {
 		image.NewUniform(colAccent), image.Point{}, draw.Src,
 	)
 
-	drawString(img, "yaps.sh", codePadX, 36, colFg)
+	drawString(face, img, "yaps.sh", codePadX, 36, colFg)
 
 	lang := entry.DetectedLanguage
 	if lang == "" {
 		lang = "plaintext"
 	}
-	langW := measureString(lang)
+	langW := measureString(face, lang)
 	badgeX := imgWidth - codePadX - langW - 12
 	badgeRect := image.Rect(badgeX-12, 18, imgWidth-codePadX, 44)
 	draw.Draw(img, badgeRect, image.NewUniform(colBg), image.Point{}, draw.Src)
-	drawString(img, lang, badgeX, 36, colFgMuted)
+	drawString(face, img, lang, badgeX, 36, colFgMuted)
 
-	lines := buildSnippet(entry.Content)
+	lines := splitLines(entry.Content)
 	bottom := imgHeight - 30
 	for i, ln := range lines {
 		y := codeStartY + i*codeLineHeight
 		if y > bottom {
 			break
 		}
+		rendered := truncateLine(face, ln)
 		col := colFg
-		if ln == "…" {
+		if rendered == "…" {
 			col = colFgFaint
 		}
-		drawString(img, ln, codePadX, y, col)
+		drawString(face, img, rendered, codePadX, y, col)
 	}
 
 	var buf bytes.Buffer
@@ -111,22 +116,22 @@ func Generate(entry *paste.Entry) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func drawString(dst *image.RGBA, s string, x, y int, col color.Color) {
+func drawString(face font.Face, dst *image.RGBA, s string, x, y int, col color.Color) {
 	d := &font.Drawer{
 		Dst:  dst,
 		Src:  image.NewUniform(col),
-		Face: regularFace,
+		Face: face,
 		Dot:  fixed.P(x, y),
 	}
 	d.DrawString(s)
 }
 
-func measureString(s string) int {
-	d := &font.Drawer{Face: regularFace}
+func measureString(face font.Face, s string) int {
+	d := &font.Drawer{Face: face}
 	return d.MeasureString(s).Round()
 }
 
-func buildSnippet(content string) []string {
+func splitLines(content string) []string {
 	content = strings.TrimSpace(content)
 	if content == "" {
 		return []string{"(empty paste)"}
@@ -138,11 +143,33 @@ func buildSnippet(content string) []string {
 			out[maxLines-1] = "…"
 			return out
 		}
-		r := []rune(ln)
-		if len(r) > maxLineRunes {
-			ln = string(r[:maxLineRunes-1]) + "…"
-		}
 		out = append(out, ln)
 	}
 	return out
+}
+
+func truncateLine(face font.Face, ln string) string {
+	if measureString(face, ln) <= codeAreaPx {
+		return ln
+	}
+	ellipsisW := measureString(face, "…")
+	if ellipsisW >= codeAreaPx {
+		// Edge: code area narrower than the ellipsis itself.
+		return "…"
+	}
+	maxW := codeAreaPx - ellipsisW
+	r := []rune(ln)
+	lo, hi := 0, len(r)
+	for lo < hi {
+		mid := (lo + hi + 1) / 2
+		if measureString(face, string(r[:mid])) <= maxW {
+			lo = mid
+		} else {
+			hi = mid - 1
+		}
+	}
+	if lo == 0 {
+		return "…"
+	}
+	return string(r[:lo]) + "…"
 }
