@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/yaps-sh/yaps/compare/v0.3.0...v0.4.0) (2026-08-13)
+
+
+### Features
+
+* add client IP header middleware ([#8](https://github.com/yaps-sh/yaps/issues/8)) ([52f966d](https://github.com/yaps-sh/yaps/commit/52f966df83641b1f1410055f950247ab1d1b8dc5))
+
 ## [0.3.0](https://github.com/yaps-sh/yaps/compare/v0.2.0...v0.3.0) (2026-08-12)
 
 
