@@ -7,14 +7,19 @@ import (
 	"github.com/yaps-sh/yaps/internal/paste"
 )
 
-templ Index() {
-	@layout("yaps.sh", nil) {
+const (
+	indexDescription = "A small, self-hostable pasting service. Free to use, forever."
+	aboutDescription = "About yaps.sh - a small, self-hostable pasting service."
+)
+
+templ Index(baseURL string) {
+	@layout("yaps.sh", indexHead(baseURL)) {
 		@index(PrimaryLanguages, AllLanguages())
 	}
 }
 
-templ About(bld build.Info, latest string) {
-	@layout("yaps.sh - about", nil) {
+templ About(bld build.Info, latest string, baseURL string) {
+	@layout("yaps.sh - about", aboutHead(baseURL)) {
 		@about(bld, latest)
 	}
 }
@@ -25,16 +30,30 @@ templ View(entry *paste.Entry, highlighted string, baseURL string) {
 	}
 }
 
-templ ogHead(entry *paste.Entry, baseURL string) {
-	<meta property="og:title" content={ ogTitle(entry) }/>
-	<meta property="og:description" content={ ogDescription() }/>
-	<meta property="og:image" content={ ogImageURL(entry, baseURL) }/>
-	<meta property="og:type" content="article"/>
-	<meta property="og:url" content={ fmt.Sprintf("%s/%s", baseURL, entry.ID) }/>
+templ metaHead(title, desc, url, typ, card string) {
+	<meta name="description" content={ desc }/>
+	<meta property="og:title" content={ title }/>
+	<meta property="og:description" content={ desc }/>
+	<meta property="og:type" content={ typ }/>
+	<meta property="og:url" content={ url }/>
 	<meta property="og:site_name" content="yaps.sh"/>
-	<meta name="twitter:card" content="summary_large_image"/>
-	<meta name="twitter:title" content={ ogTitle(entry) }/>
-	<meta name="twitter:description" content={ ogDescription() }/>
+	<meta name="twitter:card" content={ card }/>
+	<meta name="twitter:title" content={ title }/>
+	<meta name="twitter:description" content={ desc }/>
+	<link rel="canonical" href={ url }/>
+}
+
+templ indexHead(baseURL string) {
+	@metaHead("yaps.sh", indexDescription, baseURL, "website", "summary")
+}
+
+templ aboutHead(baseURL string) {
+	@metaHead("yaps.sh - about", aboutDescription, fmt.Sprintf("%s/about", baseURL), "website", "summary")
+}
+
+templ ogHead(entry *paste.Entry, baseURL string) {
+	@metaHead(ogTitle(entry), ogDescription(), fmt.Sprintf("%s/%s", baseURL, entry.ID), "article", "summary_large_image")
+	<meta property="og:image" content={ ogImageURL(entry, baseURL) }/>
 	<meta name="twitter:image" content={ ogImageURL(entry, baseURL) }/>
 }
 

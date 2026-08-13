@@ -62,11 +62,11 @@ func NewHandler(pasteSvc *paste.Paste, cfg *config.Config, bld build.Info, lates
 }
 
 func (h *Handler) Index(w http.ResponseWriter, r *http.Request) {
-	renderIndex(w, r)
+	renderIndex(w, r, h.cfg.HTTP.BaseURL)
 }
 
 func (h *Handler) About(w http.ResponseWriter, r *http.Request) {
-	renderAbout(w, r, h.buildInfo, h.latestVersion)
+	renderAbout(w, r, h.buildInfo, h.latestVersion, h.cfg.HTTP.BaseURL)
 }
 
 func (h *Handler) Version(w http.ResponseWriter, r *http.Request) {
