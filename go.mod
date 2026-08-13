@@ -5,6 +5,7 @@ go 1.26.5
 require (
 	github.com/a-h/templ v0.3.1020
 	github.com/alecthomas/chroma/v3 v3.0.0-alpha.5
+	github.com/andybalholm/brotli v1.2.2
 	github.com/dustin/go-humanize v1.0.1
 	github.com/go-chi/chi/v5 v5.3.1
 	github.com/go-playground/validator/v10 v10.30.3

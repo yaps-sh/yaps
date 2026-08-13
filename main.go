@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/andybalholm/brotli"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/yaps-sh/yaps/internal/build"
@@ -119,6 +121,18 @@ func run() error {
 	r.Use(middleware.CleanPath)
 	r.Use(middleware.StripSlashes)
 	// TODO add ratelimiting middleware, make it configurable. should also only apply to the create paste endpoint
+
+	compressor := middleware.NewCompressor(
+		5, "text/html", "text/plain", "text/css", "text/javascript", "application/json",
+	)
+
+	compressor.SetEncoder(
+		"br", func(w io.Writer, level int) io.Writer {
+			return brotli.NewWriterLevel(w, level)
+		},
+	)
+
+	r.Use(compressor.Handler)
 
 	r.Get("/", webHandler.Index)
 	r.Get("/about", webHandler.About)
