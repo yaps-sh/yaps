@@ -17,9 +17,9 @@ templ About() {
 	}
 }
 
-templ View(entry *paste.Entry, highlighted string, rawContent string) {
+templ View(entry *paste.Entry, highlighted string) {
 	@layout(title(entry)) {
-		@view(entry, highlighted, rawContent)
+		@view(entry, highlighted)
 	}
 }
 

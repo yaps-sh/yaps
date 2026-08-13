@@ -7,7 +7,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-func newValidator() *validator.Validate {
+func newValidator(maxSize int64) *validator.Validate {
 	v := validator.New(validator.WithRequiredStructEnabled())
 	if err := v.RegisterValidation(
 		"utf8", func(fl validator.FieldLevel) bool {
@@ -15,6 +15,13 @@ func newValidator() *validator.Validate {
 		},
 	); err != nil {
 		panic(fmt.Sprintf("failed to register utf8 validator: %v", err))
+	}
+	if err := v.RegisterValidation(
+		"max_size", func(fl validator.FieldLevel) bool {
+			return int64(len(fl.Field().String())) <= maxSize
+		},
+	); err != nil {
+		panic(fmt.Sprintf("failed to register max_size validator: %v", err))
 	}
 
 	return v

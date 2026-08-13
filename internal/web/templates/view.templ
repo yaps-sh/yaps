@@ -5,7 +5,7 @@ import (
 	"github.com/yaps-sh/yaps/internal/paste"
 )
 
-templ view(entry *paste.Entry, hightlighted string, rawContent string) {
+templ view(entry *paste.Entry, hightlighted string) {
 	<meta name="robots" content="noindex, nofollow"/>
 	<style>
 		.bottom-bar {
@@ -117,7 +117,7 @@ templ view(entry *paste.Entry, hightlighted string, rawContent string) {
 	<div class="view-content-wrap">
 		@templ.Raw(hightlighted)
 	</div>
-	<template id="paste-raw">{ rawContent }</template>
+	<template id="paste-raw">{ entry.Content }</template>
 	<div class="bottom-bar">
 		<div class="bottom-bar-left">
 			if entry.Filename != nil {
@@ -127,6 +127,11 @@ templ view(entry *paste.Entry, hightlighted string, rawContent string) {
 			}
 			<span class="view-tag">{ entry.DetectedLanguage }</span>
 			<span class="view-tag">{ humanize.Bytes(uint64(entry.SizeBytes)) }</span>
+			if entry.ViewCount == 1 {
+				<span class="view-tag">1 view</span>
+			} else {
+				<span class="view-tag">{ entry.ViewCount } views</span>
+			}
 		</div>
 		<div class="bottom-bar-right">
 			<button type="button" class="action-link copy-link" onclick="copyPasteContent(this)">Copy</button>

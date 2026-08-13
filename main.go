@@ -76,8 +76,7 @@ func run() error {
 
 	pasteSvc := paste.New(db)
 	go pasteSvc.StartReaper(ctx, 0)
-	rendererSvc := web.NewRenderer()
-	webHandler := web.NewHandler(pasteSvc, rendererSvc, cfg)
+	webHandler := web.NewHandler(pasteSvc, cfg)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)

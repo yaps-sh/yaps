@@ -18,12 +18,11 @@ import (
 type Handler struct {
 	pasteSvc     *paste.Paste
 	validatorSvc *validator.Validate
-	rendererSvc  *Renderer
 	cfg          *config.Config
 }
 
 type CreatePasteRequest struct {
-	Content   string  `json:"content" validate:"required,utf8"`
+	Content   string  `json:"content" validate:"required,utf8,max_size"`
 	Filename  *string `json:"filename" validate:"omitempty"`
 	Language  *string `json:"language" validate:"omitempty"`
 	ExpiresIn *int64  `json:"expires_in" validate:"omitempty,gt=0"`
@@ -45,25 +44,24 @@ type ErrorResponse struct {
 	RetryAfter int64  `json:"retry_after,omitempty"`
 }
 
-func NewHandler(pasteSvc *paste.Paste, renderer *Renderer, cfg *config.Config) *Handler {
+func NewHandler(pasteSvc *paste.Paste, cfg *config.Config) *Handler {
 	return &Handler{
 		pasteSvc:     pasteSvc,
-		validatorSvc: newValidator(),
-		rendererSvc:  renderer,
+		validatorSvc: newValidator(int64(cfg.Paste.Defaults.Anonymous.MaxSize)),
 		cfg:          cfg,
 	}
 }
 
 func (h *Handler) Index(w http.ResponseWriter, r *http.Request) {
-	h.rendererSvc.RenderIndex(w, r)
+	renderIndex(w, r)
 }
 
 func (h *Handler) About(w http.ResponseWriter, r *http.Request) {
-	h.rendererSvc.RenderAbout(w, r)
+	renderAbout(w, r)
 }
 
 func (h *Handler) HighlightCSS(w http.ResponseWriter, r *http.Request) {
-	h.rendererSvc.RenderHighlightCSS(w, r)
+	renderHighlightCSS(w, r)
 }
 
 func (h *Handler) CreatePaste(w http.ResponseWriter, r *http.Request) {
@@ -99,6 +97,15 @@ func (h *Handler) CreatePaste(w http.ResponseWriter, r *http.Request) {
 		var vErrs validator.ValidationErrors
 		if errors.As(err, &vErrs) && len(vErrs) > 0 {
 			fe := vErrs[0]
+			if fe.Field() == "Content" && fe.Tag() == "max_size" {
+				writeJSON(
+					w, http.StatusRequestEntityTooLarge, ErrorResponse{
+						Error:      "paste exceeds size limit for upload",
+						LimitBytes: limit,
+					},
+				)
+				return
+			}
 			switch {
 			case fe.Field() == "Content" && fe.Tag() == "required":
 				msg = "content is required"
@@ -109,17 +116,6 @@ func (h *Handler) CreatePaste(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: msg})
-		return
-	}
-
-	if int64(len(req.Content)) > limit {
-		writeJSON(
-			w, http.StatusRequestEntityTooLarge, ErrorResponse{
-				Error:      "paste exceeds size limit for upload",
-				LimitBytes: limit,
-			},
-		)
-
 		return
 	}
 
@@ -194,12 +190,12 @@ func (h *Handler) GetPaste(w http.ResponseWriter, r *http.Request) {
 	case "preview":
 		// TODO: this needs to be the preview system
 		h.pasteSvc.IncrementViewCount(id)
-		h.renderDefault(w, r, entry, extension)
+		renderView(w, r, entry, extension)
 		return
 
 	case "":
 		h.pasteSvc.IncrementViewCount(id)
-		h.renderDefault(w, r, entry, extension)
+		renderView(w, r, entry, extension)
 		return
 
 	default:
@@ -207,12 +203,6 @@ func (h *Handler) GetPaste(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-}
-
-func (h *Handler) renderDefault(w http.ResponseWriter, r *http.Request, entry *paste.Entry, ext string) {
-	// TODO: add all the chroma stuff here, but that's a TODO for once I get it working
-
-	h.rendererSvc.RenderView(w, r, entry, ext)
 }
 
 func writeRaw(w http.ResponseWriter, content string) {
