@@ -52,7 +52,7 @@ All commands have shortcuts in `Makefile`. Here are some common ones:
 
 ### Running
 
-GoLand project files are provided in the repository. If you use GoLand you can use it's runner to automatically generate
+GoLand project files are provided in the repository. If you use GoLand you can use its runner to automatically generate
 and run YAPS.
 
 ## Status
